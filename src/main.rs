@@ -11,6 +11,9 @@ use termion::raw::IntoRawMode;
 use termion::screen::{AlternateScreen, IntoAlternateScreen};
 use termion::{color, style};
 
+// TODO: create my own FileListItem struct
+// eg: FileListItem { name: str, type: File | Dir | SymLink, Meta: { size: str } }
+// then use that as the item type for list, like items: Vec<FileListItem>
 struct FileList<'a> {
     items: Vec<&'a str>,
     c_idx: u16,
@@ -89,6 +92,8 @@ fn main() {
 
 fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &PathBufList) {
     let mut idx = 1;
+    // let file_icon = "";
+    // let file_icon = "";
     for item in file_list.items.clone() {
         if file_list.c_idx == idx {
             write!(screen, "{} ", termion::cursor::Goto(1, idx)).unwrap();
