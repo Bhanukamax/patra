@@ -1,65 +1,39 @@
-use crossterm::{
-    cursor,
-    event::{poll, read, Event, KeyCode, KeyEvent},
-    style::{self, Stylize},
-    terminal::{self, enable_raw_mode},
-    ExecutableCommand, QueueableCommand, Result,
-};
-use std::{
-    io::{stdout, Write},
-    time::Duration,
-};
+#![allow(dead_code)]
+#![allow(unused_imports)]
+extern crate termion;
 
-fn main() -> Result<()> {
-    let mut stdout = stdout();
+use std::io::{stdin, stdout, Write};
+use termion::event::{Event, Key, MouseEvent};
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
+use termion::screen::IntoAlternateScreen;
+use termion::{color, style};
 
-    enable_raw_mode()?;
-    stdout.execute(terminal::Clear(terminal::ClearType::All))?;
+fn main() {
+    let mut screen = stdout().into_alternate_screen().unwrap();
+    let mut stdout = stdout().into_raw_mode().unwrap();
 
-    // for y in 0..40 {
-    //     for x in 0..150 {
-    //         if (y == 0 || y == 40 - 1) || (x == 0 || x == 150 - 1) {
-    //             // in this loop we are more efficient by not flushing the buffer.
-    //             stdout
-    //                 .queue(cursor::MoveTo(x, y))?
-    //                 .queue(style::PrintStyledContent("█".magenta()))?;
-    //         }
-    //     }
-    // }
+    print!("{}", termion::clear::All);
+    write!(screen, "{}", termion::cursor::Goto(1, 1)).unwrap();
+    write!(screen, "Hey there.").unwrap();
 
-    stdout
-        .queue(cursor::MoveTo(0, 0))?
-        .queue(style::PrintStyledContent("item".magenta()))?;
-    stdout
-        .queue(cursor::MoveTo(0, 2))?
-        .queue(style::PrintStyledContent("item".magenta()))?;
-    stdout.flush()?;
-    handle_events()?;
+    write!(screen, "{}One", termion::cursor::Goto(1,1)).unwrap();
+    write!(screen, "{}Two", termion::cursor::Goto(1,2)).unwrap();
+    write!(screen, "{}Three", termion::cursor::Goto(1,3)).unwrap();
 
-    Ok(())
-}
+    stdout.flush().unwrap();
 
-fn handle_key_events(event: Event) {
-    match event {
-        Event::Key(KeyEvent {
-            code: KeyCode::Char('q'),
-            ..
-        }) => {
-            println!("got key ");
-            std::process::exit(1)
-        },
-        _ => println!("zzzzzzzzzz {:?}", event),
-    }
-}
+    let stdin = stdin();
 
-fn handle_events() -> crossterm::Result<()> {
-    loop {
-        if poll(Duration::from_millis(500))? {
-            match read()? {
-                Event::Key(event) => handle_key_events(Event::Key(event)),
-                _ => println!("testing"),
-            }
+    for c in stdin.events() {
+        let evt = c.unwrap();
+
+        match evt {
+            Event::Key(Key::Char('q')) => break,
+            _ => {}
         }
+        screen.flush().unwrap();
+        stdout.flush().unwrap();
     }
-    Ok(())
+    write!(screen, "{}", termion::clear::All).unwrap();
 }
