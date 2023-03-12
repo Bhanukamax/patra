@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+// #![allow(dead_code)]
 // #![allow(unused_imports)]
 extern crate termion;
 
@@ -83,16 +83,24 @@ impl FileList {
     }
 }
 
+fn _main() {
+    let dir_list = read_dir(".").unwrap();
+
+    for i in dir_list.into_iter() {
+        println!("{}", i.unwrap().file_name().to_str().unwrap());
+    }
+}
+
 fn main() {
     let mut screen = stdout().into_alternate_screen().unwrap();
     let _stdout = stdout().into_raw_mode();
     write!(screen, "{}", termion::clear::All).unwrap();
-    let dir_list = read_dir(".").unwrap();
 
+    let dir_list = read_dir(".").unwrap();
     let items: Vec<FileItem> = dir_list
         .into_iter()
         .map(|x| FileItem {
-            name: String::from(x.as_ref().unwrap().path().as_path().to_str().unwrap()),
+            name: String::from(x.as_ref().unwrap().file_name().to_str().unwrap()),
             file_type: if x.as_ref().unwrap().path().is_dir() {
                 FileItemType::Dir
             } else if x.as_ref().unwrap().path().is_file() {
