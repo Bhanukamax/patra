@@ -11,11 +11,23 @@ use termion::raw::IntoRawMode;
 use termion::screen::{AlternateScreen, IntoAlternateScreen};
 use termion::{color, style};
 
-// TODO: create my own FileListItem struct
-// eg: FileListItem { name: str, type: File | Dir | SymLink, Meta: { size: str } }
-// then use that as the item type for list, like items: Vec<FileListItem>
-struct FileList<'a> {
-    items: Vec<&'a str>,
+#[derive(Clone, Debug)]
+enum FileItemType {
+    File,
+    Dir,
+    Sym,
+    Unknown,
+}
+
+#[derive(Clone, Debug)]
+struct FileItem {
+    name: String,
+    file_type: FileItemType,
+}
+
+#[derive(std::clone::Clone)]
+struct FileList {
+    items: Vec<FileItem>,
     c_idx: u16,
 }
 
@@ -25,7 +37,17 @@ struct PathBufList<'a> {
     c_idx: u16,
 }
 
-impl<'a> PathBufList<'a> {
+trait Menu {
+    fn next(&mut self);
+    fn prev(&mut self);
+    fn get_c_idx(&self) -> u16;
+}
+
+impl<'a> Menu for PathBufList<'a> {
+    fn get_c_idx(&self) -> u16 {
+        self.c_idx
+    }
+
     fn next(&mut self) {
         if self.c_idx == self.items.len() as u16 {
             self.c_idx = 1;
@@ -43,7 +65,7 @@ impl<'a> PathBufList<'a> {
     }
 }
 
-impl<'a> FileList<'a> {
+impl FileList {
     fn next(&mut self) {
         if self.c_idx == self.items.len() as u16 {
             self.c_idx = 1
@@ -66,12 +88,23 @@ fn main() {
     let _stdout = stdout().into_raw_mode();
     write!(screen, "{}", termion::clear::All).unwrap();
     let dir_list = read_dir(".").unwrap();
-    let file_list: Vec<PathBuf> = dir_list.into_iter().map(|i| i.unwrap().path()).collect();
 
-    let mut file_list_st = PathBufList {
-        items: &file_list,
-        c_idx: 1,
-    };
+    let items: Vec<FileItem> = dir_list
+        .into_iter()
+        .map(|x| FileItem {
+            name: String::from(x.as_ref().unwrap().path().as_path().to_str().unwrap()),
+            file_type: if x.as_ref().unwrap().path().is_dir() {
+                FileItemType::Dir
+            } else if x.as_ref().unwrap().path().is_file() {
+                FileItemType::File
+            } else if x.unwrap().path().is_symlink() {
+                FileItemType::Sym
+            } else {
+                FileItemType::Unknown
+            },
+        })
+        .collect();
+    let mut file_list_st = FileList { items, c_idx: 1 };
 
     render(&mut screen, &file_list_st);
     screen.flush().unwrap();
@@ -87,21 +120,38 @@ fn main() {
         render(&mut screen, &file_list_st);
         screen.flush().unwrap();
     }
-    // stdout.expect("should flush screen").flush().unwrap();
 }
 
-fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &PathBufList) {
+fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &FileList) {
     let mut idx = 1;
-    // let file_icon = "";
-    // let file_icon = "";
+
+    let file_icon = "";
+    let folder_icon = "";
+    let sym_icon = "";
+    let unknown_icon = "";
+
     for item in file_list.items.clone() {
+        let icon = match item.file_type {
+            FileItemType::File => file_icon,
+            FileItemType::Dir => folder_icon,
+            FileItemType::Sym => sym_icon,
+            FileItemType::Unknown => unknown_icon,
+        };
+
         if file_list.c_idx == idx {
-            write!(screen, "{} ", termion::cursor::Goto(1, idx)).unwrap();
+            write!(screen, "{}{} ", termion::cursor::Goto(1, idx), icon).unwrap();
             set_style_alt(screen);
-            write!(screen, "{:?}", item).unwrap();
+            write!(screen, "{:?}", item.name).unwrap();
             set_style_main(screen);
         } else {
-            write!(screen, "{} {:?}", termion::cursor::Goto(1, idx), item).unwrap();
+            write!(
+                screen,
+                "{}{} {:?}",
+                termion::cursor::Goto(1, idx),
+                icon,
+                item.name
+            )
+            .unwrap();
         }
         idx += 1;
     }
