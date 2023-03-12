@@ -56,17 +56,27 @@ impl FileList {
     }
     fn enter(&mut self) {}
     fn next(&mut self) {
-        if self.c_idx == self.items.as_ref().unwrap().len() as u16 {
-            self.c_idx = 1
-        } else {
-            self.c_idx = self.c_idx + 1
+        match self.items {
+            Some(_) => {
+                if self.c_idx == self.items.as_ref().unwrap().len() as u16 {
+                    self.c_idx = 1
+                } else {
+                    self.c_idx = self.c_idx + 1
+                }
+            }
+            None => (),
         }
     }
     fn prev(&mut self) {
-        if self.c_idx == 1 {
-            self.c_idx = self.items.as_ref().unwrap().len() as u16
-        } else {
-            self.c_idx = self.c_idx - 1
+        match self.items {
+            Some(_) => {
+                if self.c_idx == 1 {
+                    self.c_idx = self.items.as_ref().unwrap().len() as u16
+                } else {
+                    self.c_idx = self.c_idx - 1
+                }
+            }
+            None => (),
         }
     }
 }
@@ -91,7 +101,14 @@ fn main() {
     file_list_st.list_dir();
 
     // render(&mut screen, &file_list_st);
-    render(&mut screen, &file_list_st.items.as_ref().unwrap(), file_list_st.c_idx);
+    match &file_list_st.items {
+        Some(_) => render(
+            &mut screen,
+            &file_list_st.items.as_ref().unwrap(),
+            file_list_st.c_idx,
+        ),
+        None => println!("No listing! Press q to quit"),
+    }
     screen.flush().unwrap();
     let stdin = stdin();
     for c in stdin.events() {
@@ -104,7 +121,14 @@ fn main() {
             _ => {}
         }
 
-        render(&mut screen, &file_list_st.items.as_ref().unwrap(), file_list_st.c_idx);
+        match &file_list_st.items {
+            Some(_) => render(
+                &mut screen,
+                &file_list_st.items.as_ref().unwrap(),
+                file_list_st.c_idx,
+            ),
+            None => (),
+        }
         screen.flush().unwrap();
     }
 }
