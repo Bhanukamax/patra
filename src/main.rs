@@ -27,12 +27,21 @@ struct FileItem {
 #[derive(std::clone::Clone)]
 struct FileList {
     items: Option<Vec<FileItem>>,
+    path: String,
     c_idx: u16,
 }
 
 impl FileList {
     fn list_dir(&mut self) {
-        let dir_list = read_dir(".").unwrap();
+        // let dir_list = read_dir(&self.path).unwrap();
+        let dir_list = match read_dir(&self.path) {
+            Ok(dir) => dir,
+            Err(e) => {
+                eprintln!("Field to open {}", e);
+                return;
+            }
+        };
+
         self.items = Some(
             dir_list
                 .into_iter()
@@ -50,11 +59,24 @@ impl FileList {
                 })
                 .collect(),
         );
+        self.c_idx = 1;
     }
     fn get_c_idx(&self) -> u16 {
         self.c_idx
     }
-    fn enter(&mut self) {}
+    fn enter(&mut self) {
+        let idx: usize = self.c_idx as usize - 1;
+        match &self.items {
+            Some(x) => match x[idx].file_type {
+                FileItemType::Dir => {
+                    self.path = String::from(&self.path) + "/" + &x[idx].name;
+                    self.list_dir();
+                }
+                _ => (),
+            },
+            None => (),
+        }
+    }
     fn next(&mut self) {
         match self.items {
             Some(_) => {
@@ -95,6 +117,7 @@ fn main() {
     write!(screen, "{}", termion::clear::All).unwrap();
 
     let mut file_list_st = FileList {
+        path: ".".to_string(),
         items: None,
         c_idx: 1,
     };
@@ -117,7 +140,25 @@ fn main() {
             Event::Key(Key::Char('q')) => break,
             Event::Key(Key::Char('j')) => file_list_st.next(),
             Event::Key(Key::Char('k')) => file_list_st.prev(),
-            Event::Key(Key::Char('\n')) => file_list_st.enter(),
+            Event::Key(Key::Char('\n')) => {
+                write!(screen, "{}", termion::clear::All).unwrap();
+                file_list_st.enter();
+                // file_list_st.enter();
+                write!(
+                    screen,
+                    "{}{} ",
+                    termion::cursor::Goto(10, 20),
+                    "                   "
+                )
+                .unwrap();
+                write!(
+                    screen,
+                    "{}{} ",
+                    termion::cursor::Goto(10, 20),
+                    &file_list_st.path
+                )
+                .unwrap();
+            }
             _ => {}
         }
 
@@ -150,7 +191,7 @@ fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &Vec<FileItem>, 
         };
 
         if c_idx == idx {
-            write!(screen, "{}{} ", termion::cursor::Goto(1, idx), icon).unwrap();
+            write!(screen, "{}{} ", termion::cursor::Goto(1, idx + 2), icon).unwrap();
             set_style_alt(screen);
             write!(screen, "{:?}", item.name).unwrap();
             set_style_main(screen);
@@ -158,7 +199,7 @@ fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &Vec<FileItem>, 
             write!(
                 screen,
                 "{}{} {:?}",
-                termion::cursor::Goto(1, idx),
+                termion::cursor::Goto(1, idx + 2),
                 icon,
                 item.name
             )
