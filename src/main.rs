@@ -1,10 +1,9 @@
-// #![allow(dead_code)]
-// #![allow(unused_imports)]
+#![allow(dead_code)]
+#![allow(unused_imports)]
 extern crate termion;
 
 use std::fs::read_dir;
 use std::io::{stdin, stdout, Write};
-use std::path::PathBuf;
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -27,56 +26,45 @@ struct FileItem {
 
 #[derive(std::clone::Clone)]
 struct FileList {
-    items: Vec<FileItem>,
+    items: Option<Vec<FileItem>>,
     c_idx: u16,
-}
-
-#[derive(Debug)]
-struct PathBufList<'a> {
-    items: &'a Vec<PathBuf>,
-    c_idx: u16,
-}
-
-trait Menu {
-    fn next(&mut self);
-    fn prev(&mut self);
-    fn get_c_idx(&self) -> u16;
-}
-
-impl<'a> Menu for PathBufList<'a> {
-    fn get_c_idx(&self) -> u16 {
-        self.c_idx
-    }
-
-    fn next(&mut self) {
-        if self.c_idx == self.items.len() as u16 {
-            self.c_idx = 1;
-        } else {
-            self.c_idx = self.c_idx + 1
-        }
-    }
-
-    fn prev(&mut self) {
-        if self.c_idx == 1 {
-            self.c_idx = self.items.len() as u16;
-        } else {
-            self.c_idx = self.c_idx - 1;
-        }
-    }
 }
 
 impl FileList {
+    fn list_dir(&mut self) {
+        let dir_list = read_dir(".").unwrap();
+        self.items = Some(
+            dir_list
+                .into_iter()
+                .map(|x| FileItem {
+                    name: String::from(x.as_ref().unwrap().file_name().to_str().unwrap()),
+                    file_type: if x.as_ref().unwrap().path().is_dir() {
+                        FileItemType::Dir
+                    } else if x.as_ref().unwrap().path().is_file() {
+                        FileItemType::File
+                    } else if x.unwrap().path().is_symlink() {
+                        FileItemType::Sym
+                    } else {
+                        FileItemType::Unknown
+                    },
+                })
+                .collect(),
+        );
+    }
+    fn get_c_idx(&self) -> u16 {
+        self.c_idx
+    }
+    fn enter(&mut self) {}
     fn next(&mut self) {
-        if self.c_idx == self.items.len() as u16 {
+        if self.c_idx == self.items.as_ref().unwrap().len() as u16 {
             self.c_idx = 1
         } else {
             self.c_idx = self.c_idx + 1
         }
     }
-
     fn prev(&mut self) {
         if self.c_idx == 1 {
-            self.c_idx = self.items.len() as u16
+            self.c_idx = self.items.as_ref().unwrap().len() as u16
         } else {
             self.c_idx = self.c_idx - 1
         }
@@ -96,25 +84,14 @@ fn main() {
     let _stdout = stdout().into_raw_mode();
     write!(screen, "{}", termion::clear::All).unwrap();
 
-    let dir_list = read_dir(".").unwrap();
-    let items: Vec<FileItem> = dir_list
-        .into_iter()
-        .map(|x| FileItem {
-            name: String::from(x.as_ref().unwrap().file_name().to_str().unwrap()),
-            file_type: if x.as_ref().unwrap().path().is_dir() {
-                FileItemType::Dir
-            } else if x.as_ref().unwrap().path().is_file() {
-                FileItemType::File
-            } else if x.unwrap().path().is_symlink() {
-                FileItemType::Sym
-            } else {
-                FileItemType::Unknown
-            },
-        })
-        .collect();
-    let mut file_list_st = FileList { items, c_idx: 1 };
+    let mut file_list_st = FileList {
+        items: None,
+        c_idx: 1,
+    };
+    file_list_st.list_dir();
 
-    render(&mut screen, &file_list_st);
+    // render(&mut screen, &file_list_st);
+    render(&mut screen, &file_list_st.items.as_ref().unwrap(), file_list_st.c_idx);
     screen.flush().unwrap();
     let stdin = stdin();
     for c in stdin.events() {
@@ -123,14 +100,16 @@ fn main() {
             Event::Key(Key::Char('q')) => break,
             Event::Key(Key::Char('j')) => file_list_st.next(),
             Event::Key(Key::Char('k')) => file_list_st.prev(),
+            Event::Key(Key::Char('\n')) => file_list_st.enter(),
             _ => {}
         }
-        render(&mut screen, &file_list_st);
+
+        render(&mut screen, &file_list_st.items.as_ref().unwrap(), file_list_st.c_idx);
         screen.flush().unwrap();
     }
 }
 
-fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &FileList) {
+fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &Vec<FileItem>, c_idx: u16) {
     let mut idx = 1;
 
     let file_icon = "";
@@ -138,7 +117,7 @@ fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &FileList) {
     let sym_icon = "";
     let unknown_icon = "";
 
-    for item in file_list.items.clone() {
+    for item in file_list.clone() {
         let icon = match item.file_type {
             FileItemType::File => file_icon,
             FileItemType::Dir => folder_icon,
@@ -146,7 +125,7 @@ fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &FileList) {
             FileItemType::Unknown => unknown_icon,
         };
 
-        if file_list.c_idx == idx {
+        if c_idx == idx {
             write!(screen, "{}{} ", termion::cursor::Goto(1, idx), icon).unwrap();
             set_style_alt(screen);
             write!(screen, "{:?}", item.name).unwrap();
