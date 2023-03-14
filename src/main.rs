@@ -143,7 +143,6 @@ fn main() {
             Event::Key(Key::Char('\n')) => {
                 write!(screen, "{}", termion::clear::All).unwrap();
                 file_list_st.enter();
-                // file_list_st.enter();
                 write!(
                     screen,
                     "{}{} ",
@@ -193,15 +192,15 @@ fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &Vec<FileItem>, 
         if c_idx == idx {
             write!(screen, "{}{} ", termion::cursor::Goto(1, idx + 2), icon).unwrap();
             set_style_alt(screen);
-            write!(screen, "{:?}", item.name).unwrap();
+            write!(screen, "{}", item.name).unwrap();
             set_style_main(screen);
         } else {
             write!(
                 screen,
-                "{}{} {:?}",
+                "{}{} {}",
                 termion::cursor::Goto(1, idx + 2),
                 icon,
-                item.name
+                item.name.to_string()
             )
             .unwrap();
         }
