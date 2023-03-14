@@ -165,6 +165,7 @@ fn main() {
             Event::Key(Key::Char('j')) => file_list_st.next(),
             Event::Key(Key::Char('k')) => file_list_st.prev(),
             Event::Key(Key::Char('-')) => {
+                set_style_path(&mut screen);
                 write!(screen, "{}", termion::clear::All).unwrap();
                 file_list_st.up_dir();
                 write!(
@@ -183,6 +184,7 @@ fn main() {
                 .unwrap();
             }
             Event::Key(Key::Char('\n')) => {
+                set_style_path(&mut screen);
                 write!(screen, "{}", termion::clear::All).unwrap();
                 file_list_st.enter(&mut screen).unwrap_or_default();
                 write!(
@@ -225,11 +227,16 @@ fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &Vec<FileItem>, 
 
     for item in file_list.clone() {
         let icon = match item.file_type {
-            FileItemType::File => file_icon,
             FileItemType::Dir => folder_icon,
+            FileItemType::File => file_icon,
             FileItemType::Sym => sym_icon,
             FileItemType::Unknown => unknown_icon,
         };
+
+        match item.file_type {
+            FileItemType::Dir => set_style_dir(screen),
+            _ => set_style_file(screen),
+        }
 
         if c_idx == idx {
             write!(screen, "{}{} ", termion::cursor::Goto(1, idx + 2), icon).unwrap();
@@ -251,6 +258,24 @@ fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &Vec<FileItem>, 
 }
 
 fn set_style_main<W: Write>(screen: &mut AlternateScreen<W>) {
+    // write!(screen, "{}", color::Fg(color::White)).unwrap();
+    // write!(screen, "{}", color::Bg(color::Black)).unwrap();
+    write!(screen, "{}", style::NoUnderline).unwrap();
+}
+
+fn set_style_dir<W: Write>(screen: &mut AlternateScreen<W>) {
+    write!(screen, "{}", color::Fg(color::Blue)).unwrap();
+    write!(screen, "{}", color::Bg(color::Black)).unwrap();
+    write!(screen, "{}", style::NoUnderline).unwrap();
+}
+
+fn set_style_path<W: Write>(screen: &mut AlternateScreen<W>) {
+    write!(screen, "{}", color::Fg(color::Green)).unwrap();
+    write!(screen, "{}", color::Bg(color::Black)).unwrap();
+    write!(screen, "{}", style::NoUnderline).unwrap();
+}
+
+fn set_style_file<W: Write>(screen: &mut AlternateScreen<W>) {
     write!(screen, "{}", color::Fg(color::White)).unwrap();
     write!(screen, "{}", color::Bg(color::Black)).unwrap();
     write!(screen, "{}", style::NoUnderline).unwrap();
