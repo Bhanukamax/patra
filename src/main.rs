@@ -1,9 +1,9 @@
-#![allow(dead_code)]
-#![allow(unused_imports)]
+// #![allow(dead_code)]
+// #![allow(unused_imports)]
 extern crate termion;
 
 use std::fs::read_dir;
-use std::io::{stdin, stdout, Read, Stdout, Write};
+use std::io::{stdin, stdout, Stdout, Write};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -59,9 +59,6 @@ impl FileList {
         );
         self.c_idx = 1;
         Ok(())
-    }
-    fn get_c_idx(&self) -> u16 {
-        self.c_idx
     }
     fn enter(&mut self, screen: &mut AlternateScreen<Stdout>) -> Result<(), std::io::Error> {
         let idx: usize = self.c_idx as usize - 1;
@@ -187,9 +184,6 @@ fn main() {
             }
             Event::Key(Key::Char('\n')) => {
                 write!(screen, "{}", termion::clear::All).unwrap();
-                // match file_list_st.enter(&mut screen) {
-                //     _ => {}
-                // }
                 file_list_st.enter(&mut screen).unwrap_or_default();
                 write!(
                     screen,
