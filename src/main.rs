@@ -3,7 +3,7 @@
 extern crate termion;
 
 use std::fs::read_dir;
-use std::io::{stdin, stdout, Write};
+use std::io::{stdin, stdout, Read, Stdout, Write};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -33,14 +33,11 @@ struct FileList {
 }
 
 impl FileList {
-    fn list_dir(&mut self) {
+    fn list_dir(&mut self) -> std::io::Result<()> {
         // let dir_list = read_dir(&self.path).unwrap();
         let dir_list = match read_dir(&self.path) {
             Ok(dir) => dir,
-            Err(e) => {
-                eprintln!("Field to open {}", e);
-                return;
-            }
+            Err(e) => return Err(e),
         };
 
         self.items = Some(
@@ -61,25 +58,34 @@ impl FileList {
                 .collect(),
         );
         self.c_idx = 1;
+        Ok(())
     }
     fn get_c_idx(&self) -> u16 {
         self.c_idx
     }
-    fn enter(&mut self) {
+    fn enter(&mut self, screen: &mut AlternateScreen<Stdout>) -> Result<(), std::io::Error> {
         let idx: usize = self.c_idx as usize - 1;
         match &self.items {
             Some(x) => match x[idx].file_type {
                 FileItemType::Dir => {
+                    let original_path = String::from(&self.path);
                     self.path = if &self.path == "/" {
                         String::from(&self.path) + &x[idx].name
                     } else {
                         String::from(&self.path) + "/" + &x[idx].name
                     };
-                    self.list_dir();
+                    match self.list_dir() {
+                        Err(e) => {
+                            write!(screen, "{}{} ", termion::cursor::Goto(10, 2), e).unwrap();
+                            self.path = original_path;
+                            return Err(e);
+                        }
+                        Ok(res) => return Ok(res),
+                    }
                 }
-                _ => (),
+                _ => Ok(()),
             },
-            None => (),
+            None => Ok(()),
         }
     }
     fn up_dir(&mut self) {
@@ -90,7 +96,7 @@ impl FileList {
                 .to_str()
                 .unwrap()
                 .to_string();
-            self.list_dir();
+            self.list_dir().unwrap();
         }
         let out = std::io::stderr();
         writeln!(&out, "updated dir {:?}", self.path).unwrap();
@@ -140,7 +146,9 @@ fn main() {
         items: None,
         c_idx: 1,
     };
-    file_list_st.list_dir();
+    file_list_st
+        .list_dir()
+        .expect("Something went wrong, check if you have permission to read the directory");
 
     // render(&mut screen, &file_list_st);
     match &file_list_st.items {
@@ -179,7 +187,10 @@ fn main() {
             }
             Event::Key(Key::Char('\n')) => {
                 write!(screen, "{}", termion::clear::All).unwrap();
-                file_list_st.enter();
+                // match file_list_st.enter(&mut screen) {
+                //     _ => {}
+                // }
+                file_list_st.enter(&mut screen).unwrap_or_default();
                 write!(
                     screen,
                     "{}{} ",
