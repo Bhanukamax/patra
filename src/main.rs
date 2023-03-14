@@ -24,6 +24,7 @@ struct FileItem {
     file_type: FileItemType,
 }
 
+// TODO: make the path vector to easily go back and forth
 #[derive(std::clone::Clone)]
 struct FileList {
     items: Option<Vec<FileItem>>,
@@ -69,13 +70,30 @@ impl FileList {
         match &self.items {
             Some(x) => match x[idx].file_type {
                 FileItemType::Dir => {
-                    self.path = String::from(&self.path) + "/" + &x[idx].name;
+                    self.path = if &self.path == "/" {
+                        String::from(&self.path) + &x[idx].name
+                    } else {
+                        String::from(&self.path) + "/" + &x[idx].name
+                    };
                     self.list_dir();
                 }
                 _ => (),
             },
             None => (),
         }
+    }
+    fn up_dir(&mut self) {
+        if &self.path != "/" {
+            self.path = std::path::Path::new(&self.path)
+                .parent()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string();
+            self.list_dir();
+        }
+        let out = std::io::stderr();
+        writeln!(&out, "updated dir {:?}", self.path).unwrap();
     }
     fn next(&mut self) {
         match self.items {
@@ -104,6 +122,7 @@ impl FileList {
 }
 
 fn _main() {
+    println!("{:?}", std::env::current_dir().unwrap().parent());
     let dir_list = read_dir(".").unwrap();
 
     for i in dir_list.into_iter() {
@@ -117,7 +136,7 @@ fn main() {
     write!(screen, "{}", termion::clear::All).unwrap();
 
     let mut file_list_st = FileList {
-        path: ".".to_string(),
+        path: String::from(std::env::current_dir().unwrap().to_str().unwrap()),
         items: None,
         c_idx: 1,
     };
@@ -140,20 +159,38 @@ fn main() {
             Event::Key(Key::Char('q')) => break,
             Event::Key(Key::Char('j')) => file_list_st.next(),
             Event::Key(Key::Char('k')) => file_list_st.prev(),
-            Event::Key(Key::Char('\n')) => {
+            Event::Key(Key::Char('-')) => {
                 write!(screen, "{}", termion::clear::All).unwrap();
-                file_list_st.enter();
+                file_list_st.up_dir();
                 write!(
                     screen,
                     "{}{} ",
-                    termion::cursor::Goto(10, 20),
+                    termion::cursor::Goto(10, 1),
                     "                   "
                 )
                 .unwrap();
                 write!(
                     screen,
                     "{}{} ",
-                    termion::cursor::Goto(10, 20),
+                    termion::cursor::Goto(10, 1),
+                    &file_list_st.path
+                )
+                .unwrap();
+            }
+            Event::Key(Key::Char('\n')) => {
+                write!(screen, "{}", termion::clear::All).unwrap();
+                file_list_st.enter();
+                write!(
+                    screen,
+                    "{}{} ",
+                    termion::cursor::Goto(10, 1),
+                    "                   "
+                )
+                .unwrap();
+                write!(
+                    screen,
+                    "{}{} ",
+                    termion::cursor::Goto(10, 1),
                     &file_list_st.path
                 )
                 .unwrap();
@@ -178,7 +215,7 @@ fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &Vec<FileItem>, 
 
     let file_icon = "";
     let folder_icon = "";
-    let sym_icon = "";
+    let sym_icon = "";
     let unknown_icon = "";
 
     for item in file_list.clone() {
