@@ -40,43 +40,36 @@ pub fn render_item<W: Write>(
         _ => set_style_file(screen),
     }
     if selected {
+        write!(screen, "{}", style::Bold).unwrap();
         move_cursor_cursor(screen, 1, idx + 2);
         write!(screen, "{} ", icon).unwrap();
-        set_style_alt(screen);
+        write!(screen, "{}", style::Underline).unwrap();
         write!(screen, "{}{}", item.name, suffix).unwrap();
-        set_style_main(screen);
+        write!(screen, "{}", style::NoBold).unwrap();
+        write!(screen, "{}", style::NoUnderline).unwrap();
     } else {
         move_cursor_cursor(screen, 1, idx + 2);
-        write!(screen, "{} {}{}", icon, item.name.to_string(), suffix).unwrap();
+        write!(screen, "{}", style::Bold).unwrap();
+        write!(screen, "{}", icon).unwrap_or_default();
+        write!(screen, "{}", style::NoBold).unwrap();
+        write!(screen, " {}{}", item.name.to_string(), suffix).unwrap();
     }
 }
 
-pub fn set_style_main<W: Write>(screen: &mut AlternateScreen<W>) {
-    // write!(screen, "{}", color::Fg(color::White)).unwrap();
-    // write!(screen, "{}", color::Bg(color::Black)).unwrap();
-    write!(screen, "{}", style::NoUnderline).unwrap();
-}
 
 pub fn set_style_dir<W: Write>(screen: &mut AlternateScreen<W>) {
     write!(screen, "{}", color::Fg(color::Blue)).unwrap();
     write!(screen, "{}", color::Bg(color::Black)).unwrap();
-    write!(screen, "{}", style::NoUnderline).unwrap();
 }
 
 pub fn set_style_path<W: Write>(screen: &mut AlternateScreen<W>) {
     write!(screen, "{}", color::Fg(color::Yellow)).unwrap();
     write!(screen, "{}", color::Bg(color::Black)).unwrap();
-    write!(screen, "{}", style::NoUnderline).unwrap();
 }
 
 pub fn set_style_file<W: Write>(screen: &mut AlternateScreen<W>) {
     write!(screen, "{}", color::Fg(color::White)).unwrap();
     write!(screen, "{}", color::Bg(color::Black)).unwrap();
-    write!(screen, "{}", style::NoUnderline).unwrap();
-}
-
-pub fn set_style_alt<W: Write>(screen: &mut AlternateScreen<W>) {
-    write!(screen, "{}", style::Underline).unwrap();
 }
 
 pub fn move_cursor_cursor<W: Write>(screen: &mut AlternateScreen<W>, x: u16, y: u16) {
