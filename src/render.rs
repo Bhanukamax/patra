@@ -1,10 +1,13 @@
 use std::io::Write;
 
 use crate::patra::*;
-use termion::screen::AlternateScreen;
-use termion::{color, style};
+use termion::{self, color, screen::AlternateScreen, style};
 
-pub fn render_app<W: Write>(screen: &mut AlternateScreen<W>, file_list: &Vec<FileItem>, c_idx: u16) {
+pub fn render_app<W: Write>(
+    screen: &mut AlternateScreen<W>,
+    file_list: &Vec<FileItem>,
+    c_idx: u16,
+) {
     let mut idx = 1;
     for item in file_list.clone() {
         render_item(screen, &item, idx, c_idx == idx);
@@ -37,20 +40,14 @@ pub fn render_item<W: Write>(
         _ => set_style_file(screen),
     }
     if selected {
-        write!(screen, "{}{} ", termion::cursor::Goto(1, idx + 2), icon).unwrap();
+        move_cursor_cursor(screen, 1, idx + 2);
+        write!(screen, "{} ", icon).unwrap();
         set_style_alt(screen);
         write!(screen, "{}{}", item.name, suffix).unwrap();
         set_style_main(screen);
     } else {
-        write!(
-            screen,
-            "{}{} {}{}",
-            termion::cursor::Goto(1, idx + 2),
-            icon,
-            item.name.to_string(),
-            suffix
-        )
-        .unwrap();
+        move_cursor_cursor(screen, 1, idx + 2);
+        write!(screen, "{} {}{}", icon, item.name.to_string(), suffix).unwrap();
     }
 }
 
@@ -80,4 +77,8 @@ pub fn set_style_file<W: Write>(screen: &mut AlternateScreen<W>) {
 
 pub fn set_style_alt<W: Write>(screen: &mut AlternateScreen<W>) {
     write!(screen, "{}", style::Underline).unwrap();
+}
+
+pub fn move_cursor_cursor<W: Write>(screen: &mut AlternateScreen<W>, x: u16, y: u16) {
+    write!(screen, "{}", termion::cursor::Goto(x, y)).unwrap_or_default();
 }

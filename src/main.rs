@@ -2,7 +2,6 @@
 // #![allow(unused_imports)]
 extern crate termion;
 
-use std::fs::read_dir;
 use std::io::{stdin, stdout, Write};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
@@ -12,15 +11,6 @@ mod patra;
 mod render;
 use patra::*;
 use render::*;
-
-fn _main() {
-    println!("{:?}", std::env::current_dir().unwrap().parent());
-    let dir_list = read_dir(".").unwrap();
-
-    for i in dir_list.into_iter() {
-        println!("{}", i.unwrap().file_name().to_str().unwrap());
-    }
-}
 
 fn main() {
     let mut screen = stdout().into_alternate_screen().unwrap();
@@ -57,39 +47,19 @@ fn main() {
                 set_style_path(&mut screen);
                 write!(screen, "{}", termion::clear::All).unwrap();
                 file_list_st.up_dir();
-                write!(
-                    screen,
-                    "{}{} ",
-                    termion::cursor::Goto(10, 1),
-                    "                   "
-                )
-                .unwrap();
-                write!(
-                    screen,
-                    "{}{} ",
-                    termion::cursor::Goto(10, 1),
-                    &file_list_st.path
-                )
-                .unwrap();
+                move_cursor_cursor(&mut screen, 10, 1);
+                write!(screen, "{} ", "                   ").unwrap();
+                move_cursor_cursor(&mut screen, 10, 1);
+                write!(screen, "{} ", &file_list_st.path).unwrap();
             }
             Event::Key(Key::Char('\n')) => {
                 set_style_path(&mut screen);
                 write!(screen, "{}", termion::clear::All).unwrap();
                 file_list_st.enter(&mut screen).unwrap_or_default();
-                write!(
-                    screen,
-                    "{}{} ",
-                    termion::cursor::Goto(10, 1),
-                    "                   "
-                )
-                .unwrap();
-                write!(
-                    screen,
-                    "{}{} ",
-                    termion::cursor::Goto(10, 1),
-                    &file_list_st.path
-                )
-                .unwrap();
+                move_cursor_cursor(&mut screen, 10, 1);
+                write!(screen, "{} ", "".repeat(10)).unwrap();
+                termion::cursor::Goto(10, 1);
+                write!(screen, "{} ", &file_list_st.path).unwrap();
             }
             _ => {}
         }
