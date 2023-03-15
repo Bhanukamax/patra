@@ -3,126 +3,15 @@
 extern crate termion;
 
 use std::fs::read_dir;
-use std::io::{stdin, stdout, Stdout, Write};
+use std::io::{stdin, stdout, Write};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
-use termion::screen::{AlternateScreen, IntoAlternateScreen};
-use termion::{color, style};
-
-#[derive(Clone, Debug)]
-enum FileItemType {
-    File,
-    Dir,
-    Sym,
-    Unknown,
-}
-
-#[derive(Clone, Debug)]
-struct FileItem {
-    name: String,
-    file_type: FileItemType,
-}
-
-// TODO: make the path vector to easily go back and forth
-#[derive(std::clone::Clone)]
-struct FileList {
-    items: Option<Vec<FileItem>>,
-    path: String,
-    c_idx: u16,
-}
-
-impl FileList {
-    fn list_dir(&mut self) -> std::io::Result<()> {
-        // let dir_list = read_dir(&self.path).unwrap();
-        let dir_list = match read_dir(&self.path) {
-            Ok(dir) => dir,
-            Err(e) => return Err(e),
-        };
-
-        self.items = Some(
-            dir_list
-                .into_iter()
-                .map(|x| FileItem {
-                    name: String::from(x.as_ref().unwrap().file_name().to_str().unwrap()),
-                    file_type: if x.as_ref().unwrap().path().is_dir() {
-                        FileItemType::Dir
-                    } else if x.as_ref().unwrap().path().is_file() {
-                        FileItemType::File
-                    } else if x.unwrap().path().is_symlink() {
-                        FileItemType::Sym
-                    } else {
-                        FileItemType::Unknown
-                    },
-                })
-                .collect(),
-        );
-        self.c_idx = 1;
-        Ok(())
-    }
-    fn enter(&mut self, screen: &mut AlternateScreen<Stdout>) -> Result<(), std::io::Error> {
-        let idx: usize = self.c_idx as usize - 1;
-        match &self.items {
-            Some(x) => match x[idx].file_type {
-                FileItemType::Dir => {
-                    let original_path = String::from(&self.path);
-                    self.path = if &self.path == "/" {
-                        String::from(&self.path) + &x[idx].name
-                    } else {
-                        String::from(&self.path) + "/" + &x[idx].name
-                    };
-                    match self.list_dir() {
-                        Err(e) => {
-                            write!(screen, "{}{} ", termion::cursor::Goto(10, 2), e).unwrap();
-                            self.path = original_path;
-                            return Err(e);
-                        }
-                        Ok(res) => return Ok(res),
-                    }
-                }
-                _ => Ok(()),
-            },
-            None => Ok(()),
-        }
-    }
-    fn up_dir(&mut self) {
-        if &self.path != "/" {
-            self.path = std::path::Path::new(&self.path)
-                .parent()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_string();
-            self.list_dir().unwrap();
-        }
-        let out = std::io::stderr();
-        writeln!(&out, "updated dir {:?}", self.path).unwrap();
-    }
-    fn next(&mut self) {
-        match self.items {
-            Some(_) => {
-                if self.c_idx == self.items.as_ref().unwrap().len() as u16 {
-                    self.c_idx = 1
-                } else {
-                    self.c_idx = self.c_idx + 1
-                }
-            }
-            None => (),
-        }
-    }
-    fn prev(&mut self) {
-        match self.items {
-            Some(_) => {
-                if self.c_idx == 1 {
-                    self.c_idx = self.items.as_ref().unwrap().len() as u16
-                } else {
-                    self.c_idx = self.c_idx - 1
-                }
-            }
-            None => (),
-        }
-    }
-}
+use termion::screen::IntoAlternateScreen;
+mod patra;
+mod render;
+use patra::*;
+use render::*;
 
 fn _main() {
     println!("{:?}", std::env::current_dir().unwrap().parent());
@@ -149,7 +38,7 @@ fn main() {
 
     // render(&mut screen, &file_list_st);
     match &file_list_st.items {
-        Some(_) => render(
+        Some(_) => render_app(
             &mut screen,
             &file_list_st.items.as_ref().unwrap(),
             file_list_st.c_idx,
@@ -206,7 +95,7 @@ fn main() {
         }
 
         match &file_list_st.items {
-            Some(_) => render(
+            Some(_) => render_app(
                 &mut screen,
                 &file_list_st.items.as_ref().unwrap(),
                 file_list_st.c_idx,
@@ -215,82 +104,4 @@ fn main() {
         }
         screen.flush().unwrap();
     }
-}
-
-fn render<W: Write>(screen: &mut AlternateScreen<W>, file_list: &Vec<FileItem>, c_idx: u16) {
-    let mut idx = 1;
-    for item in file_list.clone() {
-        render_item(screen, &item, idx, c_idx == idx);
-        idx += 1;
-    }
-}
-
-fn render_item<W: Write>(
-    screen: &mut AlternateScreen<W>,
-    item: &FileItem,
-    idx: u16,
-    selected: bool,
-) {
-    let file_icon = "";
-    let folder_icon = "";
-    let sym_icon = "";
-    let unknown_icon = "";
-    let icon = match item.file_type {
-        FileItemType::Dir => folder_icon,
-        FileItemType::File => file_icon,
-        FileItemType::Sym => sym_icon,
-        FileItemType::Unknown => unknown_icon,
-    };
-    let mut suffix = "";
-    match item.file_type {
-        FileItemType::Dir => {
-            suffix = "/";
-            set_style_dir(screen)
-        }
-        _ => set_style_file(screen),
-    }
-    if selected {
-        write!(screen, "{}{} ", termion::cursor::Goto(1, idx + 2), icon).unwrap();
-        set_style_alt(screen);
-        write!(screen, "{}{}", item.name, suffix).unwrap();
-        set_style_main(screen);
-    } else {
-        write!(
-            screen,
-            "{}{} {}{}",
-            termion::cursor::Goto(1, idx + 2),
-            icon,
-            item.name.to_string(),
-            suffix
-        )
-        .unwrap();
-    }
-}
-
-fn set_style_main<W: Write>(screen: &mut AlternateScreen<W>) {
-    // write!(screen, "{}", color::Fg(color::White)).unwrap();
-    // write!(screen, "{}", color::Bg(color::Black)).unwrap();
-    write!(screen, "{}", style::NoUnderline).unwrap();
-}
-
-fn set_style_dir<W: Write>(screen: &mut AlternateScreen<W>) {
-    write!(screen, "{}", color::Fg(color::Blue)).unwrap();
-    write!(screen, "{}", color::Bg(color::Black)).unwrap();
-    write!(screen, "{}", style::NoUnderline).unwrap();
-}
-
-fn set_style_path<W: Write>(screen: &mut AlternateScreen<W>) {
-    write!(screen, "{}", color::Fg(color::Green)).unwrap();
-    write!(screen, "{}", color::Bg(color::Black)).unwrap();
-    write!(screen, "{}", style::NoUnderline).unwrap();
-}
-
-fn set_style_file<W: Write>(screen: &mut AlternateScreen<W>) {
-    write!(screen, "{}", color::Fg(color::White)).unwrap();
-    write!(screen, "{}", color::Bg(color::Black)).unwrap();
-    write!(screen, "{}", style::NoUnderline).unwrap();
-}
-
-fn set_style_alt<W: Write>(screen: &mut AlternateScreen<W>) {
-    write!(screen, "{}", style::Underline).unwrap();
 }
