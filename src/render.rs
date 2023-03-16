@@ -56,6 +56,14 @@ pub fn render_item<W: Write>(
     }
 }
 
+pub fn render_path<W: Write>(screen: &mut AlternateScreen<W>, file_list: &FileList) {
+    set_style_path(screen);
+    write!(screen, "{}", termion::clear::All).unwrap();
+    move_cursor_cursor(screen, 10, 1);
+    write!(screen, "{} ", "                   ").unwrap();
+    move_cursor_cursor(screen, 10, 1);
+    write!(screen, "{} ", &file_list.path).unwrap();
+}
 
 pub fn set_style_dir<W: Write>(screen: &mut AlternateScreen<W>) {
     write!(screen, "{}", color::Fg(color::Blue)).unwrap();
