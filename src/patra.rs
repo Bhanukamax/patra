@@ -2,7 +2,7 @@ use std::fs::read_dir;
 use std::io::{Stdout, Write};
 use termion::screen::AlternateScreen;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum FileItemType {
     File,
     Dir,
@@ -54,28 +54,24 @@ impl FileList {
     }
     pub fn enter(&mut self, screen: &mut AlternateScreen<Stdout>) -> Result<(), std::io::Error> {
         let idx: usize = self.c_idx as usize - 1;
-        match &self.items {
-            Some(x) => match x[idx].file_type {
-                FileItemType::Dir => {
-                    let original_path = String::from(&self.path);
-                    self.path = if &self.path == "/" {
-                        String::from(&self.path) + &x[idx].name
-                    } else {
-                        String::from(&self.path) + "/" + &x[idx].name
-                    };
-                    match self.list_dir() {
-                        Err(e) => {
-                            write!(screen, "{}{} ", termion::cursor::Goto(10, 2), e).unwrap();
-                            self.path = original_path;
-                            return Err(e);
-                        }
-                        Ok(res) => return Ok(res),
-                    }
-                }
-                _ => Ok(()),
-            },
-            None => Ok(()),
+        let original_path = String::from(&self.path);
+        self.items
+            .as_ref()
+            .filter(|items| items[idx].file_type == FileItemType::Dir)
+            .iter()
+            .for_each(|_| {
+                self.path = if &self.path == "/" {
+                    String::from(&self.path) + &self.items.as_ref().unwrap()[idx].name
+                } else {
+                    String::from(&self.path) + "/" + &self.items.as_ref().unwrap()[idx].name
+                };
+            });
+        if let Err(e) = self.list_dir() {
+            write!(screen, "{}{} ", termion::cursor::Goto(10, 2), e).unwrap();
+            self.path = original_path;
         }
+        write!(screen, "{}{} ", termion::cursor::Goto(10, 4), "done").unwrap();
+        Ok(())
     }
     pub fn up_dir(&mut self) {
         if &self.path != "/" {
