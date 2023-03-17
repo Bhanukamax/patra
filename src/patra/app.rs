@@ -71,7 +71,8 @@ impl PatraFileState {
         let new_path = self
             .list
             .as_ref()
-            .map(|item| &item[idx])
+            .map(|item| if &item.len() > &0 { Some(&item[idx]) } else { None })
+            .unwrap()
             .filter(|items| items.file_type == PatraFileItemType::Dir)
             .iter()
             .map(|item| match self.path.as_str() {

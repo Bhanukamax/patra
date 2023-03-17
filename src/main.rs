@@ -10,16 +10,18 @@ use termion::screen::IntoAlternateScreen;
 mod patra;
 use patra::app::PatraFileState;
 use patra::display;
+use patra::logger;
 
 fn main() {
     let mut screen = stdout().into_alternate_screen().unwrap();
     if let Err(e) = run() {
-        eprintln!("Error: {}", e);
+        logger::log(&format!("Error: {}", e)).unwrap();
         write!(screen, "{} ", termion::cursor::Show).unwrap()
     }
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
+    logger::log("starting app!!")?;
     let mut screen = stdout().into_alternate_screen()?;
     let _stdout = stdout().into_raw_mode();
     write!(screen, "{} ", termion::cursor::Hide)?;
