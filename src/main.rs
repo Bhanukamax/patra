@@ -13,6 +13,14 @@ use patra::display;
 
 fn main() {
     let mut screen = stdout().into_alternate_screen().unwrap();
+    if let Err(e) = run() {
+        eprintln!("Error: {}", e);
+        write!(screen, "{} ", termion::cursor::Show).unwrap()
+    }
+}
+
+fn run() -> Result<(), Box<dyn std::error::Error>> {
+    let mut screen = stdout().into_alternate_screen().unwrap();
     let _stdout = stdout().into_raw_mode();
     write!(screen, "{} ", termion::cursor::Hide).unwrap();
 
@@ -61,4 +69,5 @@ fn main() {
         screen.flush().unwrap();
     }
     write!(screen, "{} ", termion::cursor::Show).unwrap();
+    Ok(())
 }

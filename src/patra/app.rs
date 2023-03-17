@@ -80,7 +80,7 @@ impl PatraFileList {
             })
             .collect::<Vec<_>>();
 
-        self.path = new_path.last().cloned().unwrap_or_default();
+        self.path = new_path.last().cloned().unwrap_or(self.path.clone());
 
         if let Err(e) = self.list_dir() {
             self.error.push(e.to_string());

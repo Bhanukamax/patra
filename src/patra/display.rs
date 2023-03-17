@@ -71,5 +71,5 @@ pub fn set_style_file<W: Write>(screen: &mut AlternateScreen<W>) {
 }
 
 pub fn move_cursor_cursor<W: Write>(screen: &mut AlternateScreen<W>, x: u16, y: u16) {
-    write!(screen, "{}", termion::cursor::Goto(x, y)).unwrap_or_default();
+    write!(screen, "{}", termion::cursor::Goto(x, y)).unwrap();
 }
