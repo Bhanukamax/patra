@@ -14,7 +14,6 @@ use patra::display;
 fn main() {
     let mut screen = stdout().into_alternate_screen().unwrap();
     let _stdout = stdout().into_raw_mode();
-    write!(screen, "{}", termion::clear::All).unwrap();
     write!(screen, "{} ", termion::cursor::Hide).unwrap();
 
     let mut file_list_st = PatraFileList::new(String::from(
@@ -37,7 +36,6 @@ fn main() {
         if let Event::Key(Key::Char(key)) = c.unwrap() {
             match &key {
                 'q' => {
-                    write!(screen, "{} ", termion::cursor::Show).unwrap();
                     break;
                 }
                 'j' => file_list_st.next(),
@@ -62,4 +60,5 @@ fn main() {
 
         screen.flush().unwrap();
     }
+    write!(screen, "{} ", termion::cursor::Show).unwrap();
 }

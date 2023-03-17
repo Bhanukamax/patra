@@ -7,11 +7,9 @@ pub fn render_app<W: Write>(
     file_list: &Vec<PatraFileItem>,
     c_idx: u16,
 ) {
-    let mut idx = 1;
-    for item in file_list.clone() {
-        render_item(screen, &item, idx, c_idx == idx);
-        idx += 1;
-    }
+    file_list.iter().enumerate().for_each(|(idx, item)| {
+        render_item(screen, &item, idx as u16 + 1, c_idx == idx as u16 + 1);
+    });
 }
 
 pub fn render_item<W: Write>(
@@ -20,24 +18,17 @@ pub fn render_item<W: Write>(
     idx: u16,
     selected: bool,
 ) {
-    let file_icon = "";
-    let folder_icon = "";
-    let sym_icon = "";
-    let unknown_icon = "";
-    let icon = match item.file_type {
-        PatraFileItemType::Dir => folder_icon,
-        PatraFileItemType::File => file_icon,
-        PatraFileItemType::Sym => sym_icon,
-        PatraFileItemType::Unknown => unknown_icon,
-    };
-    let mut suffix = "";
-    match item.file_type {
+    set_style_file(screen);
+    let (icon, suffix) = match item.file_type {
         PatraFileItemType::Dir => {
-            suffix = "/";
-            set_style_dir(screen)
+            set_style_dir(screen);
+            ("", "/")
         }
-        _ => set_style_file(screen),
-    }
+        PatraFileItemType::File => ("", ""),
+        PatraFileItemType::Sym => ("", ""),
+        PatraFileItemType::Unknown => ("⚠", ""),
+    };
+
     if selected {
         write!(screen, "{}", style::Bold).unwrap();
         move_cursor_cursor(screen, 1, idx + 2);
@@ -49,7 +40,7 @@ pub fn render_item<W: Write>(
     } else {
         move_cursor_cursor(screen, 1, idx + 2);
         write!(screen, "{}", style::Bold).unwrap();
-        write!(screen, "{}", icon).unwrap_or_default();
+        write!(screen, "{}", icon).unwrap();
         write!(screen, "{}", style::NoBold).unwrap();
         write!(screen, " {}{}", item.name.to_string(), suffix).unwrap();
     }
