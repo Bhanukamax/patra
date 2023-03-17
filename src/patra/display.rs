@@ -1,6 +1,5 @@
+use super::app::{PatraFileItem, PatraFileItemType, PatraFileList};
 use std::io::Write;
-
-use crate::patra::*;
 use termion::{self, color, screen::AlternateScreen, style};
 
 pub fn render_app<W: Write>(

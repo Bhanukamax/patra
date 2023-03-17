@@ -8,9 +8,8 @@ use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::screen::IntoAlternateScreen;
 mod patra;
-mod render;
-use patra::*;
-use render::*;
+use patra::app::PatraFileList;
+use patra::display;
 
 fn main() {
     let mut screen = stdout().into_alternate_screen().unwrap();
@@ -27,7 +26,7 @@ fn main() {
         .expect("Something went wrong, check if you have permission to read the directory");
 
     if let Some(file_list_items) = &file_list_st.items {
-        render_app(&mut screen, &file_list_items.as_ref(), file_list_st.c_idx);
+        display::render_app(&mut screen, &file_list_items.as_ref(), file_list_st.c_idx);
     } else {
         println!("No listing! Press q to quit");
     }
@@ -45,18 +44,18 @@ fn main() {
                 'k' => file_list_st.prev(),
                 '-' | 'h' => {
                     file_list_st.up_dir();
-                    render_path(&mut screen, &file_list_st);
+                    display::render_path(&mut screen, &file_list_st);
                 }
                 '\n' | 'l' => {
                     file_list_st.enter(&mut screen).unwrap();
-                    render_path(&mut screen, &file_list_st);
+                    display::render_path(&mut screen, &file_list_st);
                 }
                 _ => {}
             }
         }
 
         if let Some(file_list_items) = &file_list_st.items {
-            render_app(&mut screen, &file_list_items.as_ref(), file_list_st.c_idx);
+            display::render_app(&mut screen, &file_list_items.as_ref(), file_list_st.c_idx);
         } else {
             println!("No listing! Press q to quit");
         }
