@@ -1,4 +1,4 @@
-use super::display::move_cursor_cursor;
+// use super::display::move_cursor_cursor;
 use std::fs;
 use std::io::{Stdout, Write};
 use termion::screen::AlternateScreen;
@@ -17,13 +17,11 @@ pub struct PatraFileListItem {
     pub file_type: PatraFileItemType,
 }
 
-// TODO: make the path vector to easily go back and forth
 #[derive(std::clone::Clone)]
 pub struct PatraFileState {
     pub list: Option<Vec<PatraFileListItem>>,
     pub path: String,
     pub c_idx: u16,
-    error: Vec<String>,
 }
 
 impl PatraFileState {
@@ -32,16 +30,10 @@ impl PatraFileState {
             path,
             list: None,
             c_idx: 1,
-            error: vec![],
         }
     }
 
-    // pub fn get_error(&self) -> &Vec<String> {
-    //     &self.error
-    // }
-
     pub fn list_dir(&mut self) -> std::io::Result<()> {
-        // let dir_list = read_dir(&self.path).unwrap();
         let dir_list = fs::read_dir(&self.path)?;
         self.list = Some(
             dir_list
@@ -65,13 +57,19 @@ impl PatraFileState {
         Ok(())
     }
 
-    pub fn enter(&mut self, screen: &mut AlternateScreen<Stdout>) -> Result<(), std::io::Error> {
+    pub fn enter(&mut self, _screen: &mut AlternateScreen<Stdout>) -> Result<(), std::io::Error> {
         let idx: usize = self.c_idx as usize - 1;
         let original_path = String::from(&self.path);
         let new_path = self
             .list
             .as_ref()
-            .map(|item| if &item.len() > &0 { Some(&item[idx]) } else { None })
+            .map(|item| {
+                if &item.len() > &0 {
+                    Some(&item[idx])
+                } else {
+                    None
+                }
+            })
             .unwrap()
             .filter(|items| items.file_type == PatraFileItemType::Dir)
             .iter()
@@ -83,11 +81,12 @@ impl PatraFileState {
 
         self.path = new_path.last().cloned().unwrap_or(self.path.clone());
 
-        if let Err(e) = self.list_dir() {
-            self.error.push(e.to_string());
-            move_cursor_cursor(screen, 10, 2);
-            self.path = original_path;
-        }
+        self.list_dir()
+            .map_err(|_| {
+                self.path = original_path;
+            })
+            .iter();
+
         Ok(())
     }
 
