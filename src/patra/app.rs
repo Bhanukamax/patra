@@ -1,4 +1,4 @@
-use super::display::move_cursor_cursor;
+use super::display::{move_cursor_cursor, set_style_dir};
 use std::fs;
 use std::io::{Stdout, Write};
 use termion::screen::AlternateScreen;
@@ -90,7 +90,7 @@ impl PatraFileList {
         Ok(())
     }
 
-    pub fn up_dir(&mut self) {
+    pub fn up_dir(&mut self) -> Result<(), std::io::Error>{
         if &self.path != "/" {
             self.path = std::path::Path::new(&self.path)
                 .parent()
@@ -98,26 +98,27 @@ impl PatraFileList {
                 .to_str()
                 .unwrap()
                 .to_string();
-            self.list_dir().unwrap();
+            self.list_dir()?;
         }
         let out = std::io::stderr();
-        writeln!(&out, "updated dir {:?}", self.path).unwrap();
+        writeln!(&out, "updated dir {:?}", self.path)?;
+        Ok(())
     }
+
     pub fn next(&mut self) {
         if let Some(items) = &self.items {
-            if self.c_idx == items.len() as u16 {
-                self.c_idx = 1
-            } else {
-                self.c_idx = self.c_idx + 1
+            self.c_idx = match self.c_idx {
+                idx if idx == items.len() as u16 => 1,
+                _ => self.c_idx + 1,
             }
         }
     }
+
     pub fn prev(&mut self) {
         if let Some(items) = &self.items {
-            if self.c_idx == 1 {
-                self.c_idx = items.len() as u16
-            } else {
-                self.c_idx = self.c_idx - 1
+            self.c_idx = match self.c_idx {
+                1 => items.len() as u16,
+                _ => self.c_idx - 1,
             }
         }
     }

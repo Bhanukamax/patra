@@ -49,7 +49,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 'j' => file_list_st.next(),
                 'k' => file_list_st.prev(),
                 '-' | 'h' => {
-                    file_list_st.up_dir();
+                    file_list_st.up_dir()?;
                     display::render_path(&mut screen, &file_list_st);
                 }
                 '\n' | 'l' => {
