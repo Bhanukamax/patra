@@ -1,9 +1,11 @@
-use std::fs::read_dir;
+use std::fs;
 use std::io::{Stdout, Write};
 use termion::screen::AlternateScreen;
 
+use crate::render::move_cursor_cursor;
+
 #[derive(Clone, Debug, PartialEq)]
-pub enum FileItemType {
+pub enum PatraFileItemType {
     File,
     Dir,
     Sym,
@@ -11,68 +13,84 @@ pub enum FileItemType {
 }
 
 #[derive(Clone, Debug)]
-pub struct FileItem {
+pub struct PatraFileItem {
     pub name: String,
-    pub file_type: FileItemType,
+    pub file_type: PatraFileItemType,
 }
 
 // TODO: make the path vector to easily go back and forth
 #[derive(std::clone::Clone)]
-pub struct FileList {
-    pub items: Option<Vec<FileItem>>,
+pub struct PatraFileList {
+    pub items: Option<Vec<PatraFileItem>>,
     pub path: String,
     pub c_idx: u16,
+    error: Vec<String>,
 }
 
-impl FileList {
+impl PatraFileList {
+    pub fn new(path: String) -> PatraFileList {
+        PatraFileList {
+            path,
+            items: None,
+            c_idx: 1,
+            error: vec![],
+        }
+    }
+
+    pub fn get_error(&self) -> &Vec<String> {
+        &self.error
+    }
+
     pub fn list_dir(&mut self) -> std::io::Result<()> {
         // let dir_list = read_dir(&self.path).unwrap();
-        let dir_list = match read_dir(&self.path) {
-            Ok(dir) => dir,
-            Err(e) => return Err(e),
-        };
-
+        let dir_list = fs::read_dir(&self.path)?;
         self.items = Some(
             dir_list
                 .into_iter()
-                .map(|x| FileItem {
+                .map(|x| PatraFileItem {
                     name: String::from(x.as_ref().unwrap().file_name().to_str().unwrap()),
                     file_type: if x.as_ref().unwrap().path().is_dir() {
-                        FileItemType::Dir
+                        PatraFileItemType::Dir
                     } else if x.as_ref().unwrap().path().is_file() {
-                        FileItemType::File
+                        PatraFileItemType::File
                     } else if x.unwrap().path().is_symlink() {
-                        FileItemType::Sym
+                        PatraFileItemType::Sym
                     } else {
-                        FileItemType::Unknown
+                        PatraFileItemType::Unknown
                     },
                 })
                 .collect(),
         );
+
         self.c_idx = 1;
         Ok(())
     }
+
     pub fn enter(&mut self, screen: &mut AlternateScreen<Stdout>) -> Result<(), std::io::Error> {
         let idx: usize = self.c_idx as usize - 1;
         let original_path = String::from(&self.path);
-        self.items
+        let new_path = self
+            .items
             .as_ref()
-            .filter(|items| items[idx].file_type == FileItemType::Dir)
+            .map(|item| &item[idx])
+            .filter(|items| items.file_type == PatraFileItemType::Dir)
             .iter()
-            .for_each(|_| {
-                self.path = if &self.path == "/" {
-                    String::from(&self.path) + &self.items.as_ref().unwrap()[idx].name
-                } else {
-                    String::from(&self.path) + "/" + &self.items.as_ref().unwrap()[idx].name
-                };
-            });
+            .map(|item| match self.path.as_str() {
+                "/" => format!("/{}", &item.name),
+                _ => format!("{}/{}", &self.path, &item.name),
+            })
+            .collect::<Vec<_>>();
+
+        self.path = new_path.last().cloned().unwrap_or_default();
+
         if let Err(e) = self.list_dir() {
-            write!(screen, "{}{} ", termion::cursor::Goto(10, 2), e).unwrap();
+            self.error.push(e.to_string());
+            move_cursor_cursor(screen, 10, 2);
             self.path = original_path;
         }
-        write!(screen, "{}{} ", termion::cursor::Goto(10, 4), "done").unwrap();
         Ok(())
     }
+
     pub fn up_dir(&mut self) {
         if &self.path != "/" {
             self.path = std::path::Path::new(&self.path)
@@ -87,27 +105,21 @@ impl FileList {
         writeln!(&out, "updated dir {:?}", self.path).unwrap();
     }
     pub fn next(&mut self) {
-        match self.items {
-            Some(_) => {
-                if self.c_idx == self.items.as_ref().unwrap().len() as u16 {
-                    self.c_idx = 1
-                } else {
-                    self.c_idx = self.c_idx + 1
-                }
+        if let Some(items) = &self.items {
+            if self.c_idx == items.len() as u16 {
+                self.c_idx = 1
+            } else {
+                self.c_idx = self.c_idx + 1
             }
-            None => (),
         }
     }
     pub fn prev(&mut self) {
-        match self.items {
-            Some(_) => {
-                if self.c_idx == 1 {
-                    self.c_idx = self.items.as_ref().unwrap().len() as u16
-                } else {
-                    self.c_idx = self.c_idx - 1
-                }
+        if let Some(items) = &self.items {
+            if self.c_idx == 1 {
+                self.c_idx = items.len() as u16
+            } else {
+                self.c_idx = self.c_idx - 1
             }
-            None => (),
         }
     }
 }

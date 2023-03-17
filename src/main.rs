@@ -18,11 +18,10 @@ fn main() {
     write!(screen, "{}", termion::clear::All).unwrap();
     write!(screen, "{} ", termion::cursor::Hide).unwrap();
 
-    let mut file_list_st = FileList {
-        path: String::from(std::env::current_dir().unwrap().to_str().unwrap()),
-        items: None,
-        c_idx: 1,
-    };
+    let mut file_list_st = PatraFileList::new(String::from(
+        std::env::current_dir().unwrap().to_str().unwrap(),
+    ));
+
     file_list_st
         .list_dir()
         .expect("Something went wrong, check if you have permission to read the directory");
@@ -36,8 +35,7 @@ fn main() {
     screen.flush().unwrap();
     let stdin = stdin();
     for c in stdin.events() {
-        let evt = c.unwrap();
-        if let Event::Key(Key::Char(key)) = evt {
+        if let Event::Key(Key::Char(key)) = c.unwrap() {
             match &key {
                 'q' => {
                     write!(screen, "{} ", termion::cursor::Show).unwrap();
@@ -50,7 +48,7 @@ fn main() {
                     render_path(&mut screen, &file_list_st);
                 }
                 '\n' | 'l' => {
-                    file_list_st.enter(&mut screen).unwrap_or_default();
+                    file_list_st.enter(&mut screen).unwrap();
                     render_path(&mut screen, &file_list_st);
                 }
                 _ => {}

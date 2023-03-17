@@ -5,7 +5,7 @@ use termion::{self, color, screen::AlternateScreen, style};
 
 pub fn render_app<W: Write>(
     screen: &mut AlternateScreen<W>,
-    file_list: &Vec<FileItem>,
+    file_list: &Vec<PatraFileItem>,
     c_idx: u16,
 ) {
     let mut idx = 1;
@@ -17,7 +17,7 @@ pub fn render_app<W: Write>(
 
 pub fn render_item<W: Write>(
     screen: &mut AlternateScreen<W>,
-    item: &FileItem,
+    item: &PatraFileItem,
     idx: u16,
     selected: bool,
 ) {
@@ -26,14 +26,14 @@ pub fn render_item<W: Write>(
     let sym_icon = "";
     let unknown_icon = "";
     let icon = match item.file_type {
-        FileItemType::Dir => folder_icon,
-        FileItemType::File => file_icon,
-        FileItemType::Sym => sym_icon,
-        FileItemType::Unknown => unknown_icon,
+        PatraFileItemType::Dir => folder_icon,
+        PatraFileItemType::File => file_icon,
+        PatraFileItemType::Sym => sym_icon,
+        PatraFileItemType::Unknown => unknown_icon,
     };
     let mut suffix = "";
     match item.file_type {
-        FileItemType::Dir => {
+        PatraFileItemType::Dir => {
             suffix = "/";
             set_style_dir(screen)
         }
@@ -56,7 +56,7 @@ pub fn render_item<W: Write>(
     }
 }
 
-pub fn render_path<W: Write>(screen: &mut AlternateScreen<W>, file_list: &FileList) {
+pub fn render_path<W: Write>(screen: &mut AlternateScreen<W>, file_list: &PatraFileList) {
     set_style_path(screen);
     write!(screen, "{}", termion::clear::All).unwrap();
     move_cursor_cursor(screen, 10, 1);
