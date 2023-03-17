@@ -20,9 +20,9 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let mut screen = stdout().into_alternate_screen().unwrap();
+    let mut screen = stdout().into_alternate_screen()?;
     let _stdout = stdout().into_raw_mode();
-    write!(screen, "{} ", termion::cursor::Hide).unwrap();
+    write!(screen, "{} ", termion::cursor::Hide)?;
 
     let mut file_list_st = PatraFileState::new(String::from(
         std::env::current_dir().unwrap().to_str().unwrap(),
@@ -34,16 +34,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     display::render(&mut screen, &file_list_st);
 
-    screen.flush().unwrap();
+    screen.flush()?;
     let stdin = stdin();
     for c in stdin.events() {
-        if let Event::Key(Key::Char(key)) = c.unwrap() {
+        if let Event::Key(Key::Char(key)) = c? {
             match &key {
                 'q' => break,
                 'j' => file_list_st.next(),
                 'k' => file_list_st.prev(),
                 '-' | 'h' => file_list_st.up_dir()?,
-                '\n' | 'l' => file_list_st.enter(&mut screen).unwrap(),
+                '\n' | 'l' => file_list_st.enter(&mut screen)?,
                 _ => {}
             }
         }
@@ -52,6 +52,6 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
         screen.flush().unwrap();
     }
-    write!(screen, "{} ", termion::cursor::Show).unwrap();
+    write!(screen, "{} ", termion::cursor::Show)?;
     Ok(())
 }
