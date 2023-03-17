@@ -1,4 +1,4 @@
-use super::display::{move_cursor_cursor, set_style_dir};
+use super::display::move_cursor_cursor;
 use std::fs;
 use std::io::{Stdout, Write};
 use termion::screen::AlternateScreen;
@@ -36,9 +36,9 @@ impl PatraFileState {
         }
     }
 
-    pub fn get_error(&self) -> &Vec<String> {
-        &self.error
-    }
+    // pub fn get_error(&self) -> &Vec<String> {
+    //     &self.error
+    // }
 
     pub fn list_dir(&mut self) -> std::io::Result<()> {
         // let dir_list = read_dir(&self.path).unwrap();
@@ -90,7 +90,7 @@ impl PatraFileState {
         Ok(())
     }
 
-    pub fn up_dir(&mut self) -> Result<(), std::io::Error>{
+    pub fn up_dir(&mut self) -> Result<(), std::io::Error> {
         if &self.path != "/" {
             self.path = std::path::Path::new(&self.path)
                 .parent()

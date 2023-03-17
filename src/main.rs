@@ -32,39 +32,23 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         .list_dir()
         .expect("Something went wrong, check if you have permission to read the directory");
 
-    if let Some(file_list_items) = &file_list_st.list {
-        display::render_app(&mut screen, &file_list_items.as_ref(), file_list_st.c_idx);
-    } else {
-        println!("No listing! Press q to quit");
-    }
+    display::render(&mut screen, &file_list_st);
 
     screen.flush().unwrap();
     let stdin = stdin();
     for c in stdin.events() {
         if let Event::Key(Key::Char(key)) = c.unwrap() {
             match &key {
-                'q' => {
-                    break;
-                }
+                'q' => break,
                 'j' => file_list_st.next(),
                 'k' => file_list_st.prev(),
-                '-' | 'h' => {
-                    file_list_st.up_dir()?;
-                    display::render_path(&mut screen, &file_list_st);
-                }
-                '\n' | 'l' => {
-                    file_list_st.enter(&mut screen).unwrap();
-                    display::render_path(&mut screen, &file_list_st);
-                }
+                '-' | 'h' => file_list_st.up_dir()?,
+                '\n' | 'l' => file_list_st.enter(&mut screen).unwrap(),
                 _ => {}
             }
         }
 
-        if let Some(file_list_items) = &file_list_st.list {
-            display::render_app(&mut screen, &file_list_items.as_ref(), file_list_st.c_idx);
-        } else {
-            println!("No listing! Press q to quit");
-        }
+        display::render(&mut screen, &file_list_st);
 
         screen.flush().unwrap();
     }
