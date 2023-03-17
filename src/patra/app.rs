@@ -12,25 +12,25 @@ pub enum PatraFileItemType {
 }
 
 #[derive(Clone, Debug)]
-pub struct PatraFileItem {
+pub struct PatraFileListItem {
     pub name: String,
     pub file_type: PatraFileItemType,
 }
 
 // TODO: make the path vector to easily go back and forth
 #[derive(std::clone::Clone)]
-pub struct PatraFileList {
-    pub items: Option<Vec<PatraFileItem>>,
+pub struct PatraFileState {
+    pub list: Option<Vec<PatraFileListItem>>,
     pub path: String,
     pub c_idx: u16,
     error: Vec<String>,
 }
 
-impl PatraFileList {
-    pub fn new(path: String) -> PatraFileList {
-        PatraFileList {
+impl PatraFileState {
+    pub fn new(path: String) -> PatraFileState {
+        PatraFileState {
             path,
-            items: None,
+            list: None,
             c_idx: 1,
             error: vec![],
         }
@@ -43,10 +43,10 @@ impl PatraFileList {
     pub fn list_dir(&mut self) -> std::io::Result<()> {
         // let dir_list = read_dir(&self.path).unwrap();
         let dir_list = fs::read_dir(&self.path)?;
-        self.items = Some(
+        self.list = Some(
             dir_list
                 .into_iter()
-                .map(|x| PatraFileItem {
+                .map(|x| PatraFileListItem {
                     name: String::from(x.as_ref().unwrap().file_name().to_str().unwrap()),
                     file_type: if x.as_ref().unwrap().path().is_dir() {
                         PatraFileItemType::Dir
@@ -69,7 +69,7 @@ impl PatraFileList {
         let idx: usize = self.c_idx as usize - 1;
         let original_path = String::from(&self.path);
         let new_path = self
-            .items
+            .list
             .as_ref()
             .map(|item| &item[idx])
             .filter(|items| items.file_type == PatraFileItemType::Dir)
@@ -106,7 +106,7 @@ impl PatraFileList {
     }
 
     pub fn next(&mut self) {
-        if let Some(items) = &self.items {
+        if let Some(items) = &self.list {
             self.c_idx = match self.c_idx {
                 idx if idx == items.len() as u16 => 1,
                 _ => self.c_idx + 1,
@@ -115,7 +115,7 @@ impl PatraFileList {
     }
 
     pub fn prev(&mut self) {
-        if let Some(items) = &self.items {
+        if let Some(items) = &self.list {
             self.c_idx = match self.c_idx {
                 1 => items.len() as u16,
                 _ => self.c_idx - 1,

@@ -8,7 +8,7 @@ use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::screen::IntoAlternateScreen;
 mod patra;
-use patra::app::PatraFileList;
+use patra::app::PatraFileState;
 use patra::display;
 
 fn main() {
@@ -24,7 +24,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let _stdout = stdout().into_raw_mode();
     write!(screen, "{} ", termion::cursor::Hide).unwrap();
 
-    let mut file_list_st = PatraFileList::new(String::from(
+    let mut file_list_st = PatraFileState::new(String::from(
         std::env::current_dir().unwrap().to_str().unwrap(),
     ));
 
@@ -32,7 +32,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         .list_dir()
         .expect("Something went wrong, check if you have permission to read the directory");
 
-    if let Some(file_list_items) = &file_list_st.items {
+    if let Some(file_list_items) = &file_list_st.list {
         display::render_app(&mut screen, &file_list_items.as_ref(), file_list_st.c_idx);
     } else {
         println!("No listing! Press q to quit");
@@ -60,7 +60,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        if let Some(file_list_items) = &file_list_st.items {
+        if let Some(file_list_items) = &file_list_st.list {
             display::render_app(&mut screen, &file_list_items.as_ref(), file_list_st.c_idx);
         } else {
             println!("No listing! Press q to quit");

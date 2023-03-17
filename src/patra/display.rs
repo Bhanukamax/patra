@@ -1,10 +1,10 @@
-use super::app::{PatraFileItem, PatraFileItemType, PatraFileList};
+use super::app::{PatraFileListItem, PatraFileItemType, PatraFileState};
 use std::io::Write;
 use termion::{self, color, screen::AlternateScreen, style};
 
 pub fn render_app<W: Write>(
     screen: &mut AlternateScreen<W>,
-    file_list: &Vec<PatraFileItem>,
+    file_list: &Vec<PatraFileListItem>,
     c_idx: u16,
 ) {
     file_list.iter().enumerate().for_each(|(idx, item)| {
@@ -14,7 +14,7 @@ pub fn render_app<W: Write>(
 
 pub fn render_item<W: Write>(
     screen: &mut AlternateScreen<W>,
-    item: &PatraFileItem,
+    item: &PatraFileListItem,
     idx: u16,
     selected: bool,
 ) {
@@ -46,7 +46,7 @@ pub fn render_item<W: Write>(
     }
 }
 
-pub fn render_path<W: Write>(screen: &mut AlternateScreen<W>, file_list: &PatraFileList) {
+pub fn render_path<W: Write>(screen: &mut AlternateScreen<W>, file_list: &PatraFileState) {
     set_style_path(screen);
     write!(screen, "{}", termion::clear::All).unwrap();
     move_cursor_cursor(screen, 10, 1);
