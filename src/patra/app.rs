@@ -74,7 +74,7 @@ impl PatraFileState {
             })
             .unwrap()
             .filter(|items| {
-                logger::log(&format!("items : {:?}", &items));
+                logger::debug(&format!("items : {:?}", &items));
                 items.file_type == PatraFileItemType::Dir
             })
             .iter()
@@ -84,7 +84,7 @@ impl PatraFileState {
             })
             .collect::<Vec<_>>();
 
-        logger::log(&format!("New path: {:?}", new_path));
+        logger::debug(&format!("New path: {:?}", new_path));
         self.path = match new_path.last().cloned() {
             Some(x) => x,
             None => self.path.clone(),
@@ -94,11 +94,11 @@ impl PatraFileState {
             .map_err(|e| -> Result<(), std::io::Error> {
                 self.path = original_path;
                 self.c_idx = old_idx;
-                logger::log(&format!("Error opening: {:?}", &e));
+                logger::error(&format!("Error opening: {:?}", &e));
                 Ok(())
             })
             .iter();
-        logger::log(&format!("new path: {:?}", &self.path));
+        logger::debug(&format!("new path: {:?}", &self.path));
         // logger::log!("new path: {:?}", &self.path)?;
 
         Ok(())

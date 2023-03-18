@@ -80,6 +80,14 @@ pub fn set_style_path<W: Write>(screen: &mut AlternateScreen<W>) {
     write!(screen, "{}", color::Bg(color::Black)).unwrap();
 }
 
+pub fn scroll_up<W: Write>(screen: &mut AlternateScreen<W>) {
+    write!(screen, "{}", termion::scroll::Up(3)).unwrap();
+}
+
+pub fn scroll_down<W: Write>(screen: &mut AlternateScreen<W>) {
+    write!(screen, "{}", termion::scroll::Down(3)).unwrap();
+}
+
 pub fn set_style_file<W: Write>(screen: &mut AlternateScreen<W>) {
     write!(screen, "{}", color::Fg(color::White)).unwrap();
     write!(screen, "{}", color::Bg(color::Black)).unwrap();

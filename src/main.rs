@@ -14,14 +14,14 @@ use patra::logger;
 
 fn main() {
     // let mut screen = stdout().into_alternate_screen().unwrap();
+    logger::info("Starting app");
     if let Err(e) = run() {
-        logger::log(&format!("Error: {}", e));
+        logger::error(&format!("Error: {}", e));
         // write!(screen, "{} ", termion::cursor::Show).unwrap()
     }
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    logger::log("starting app!!");
     let mut screen = stdout().into_alternate_screen()?;
     let _stdout = stdout().into_raw_mode();
     write!(screen, "{} ", termion::cursor::Hide)?;
@@ -51,8 +51,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         if let Event::Key(Key::Ctrl(key)) = c? {
             match &key {
-                'p' => file_list_st.prev(),
-                'n' => file_list_st.next(),
+                // 'p' => display::scroll_up(&mut screen),
+                // 'n' => display::scroll_down(&mut screen),
                 _ => {}
             }
         }
