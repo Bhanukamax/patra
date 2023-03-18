@@ -1,6 +1,7 @@
 // use super::display::move_cursor_cursor;
+use super::logger;
 use std::fs;
-use std::io::{Stdout, Write};
+use std::io::Stdout;
 use termion::screen::AlternateScreen;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -17,7 +18,7 @@ pub struct PatraFileListItem {
     pub file_type: PatraFileItemType,
 }
 
-#[derive(std::clone::Clone)]
+#[derive(std::clone::Clone, Debug)]
 pub struct PatraFileState {
     pub list: Option<Vec<PatraFileListItem>>,
     pub path: String,
@@ -52,14 +53,15 @@ impl PatraFileState {
                 })
                 .collect(),
         );
-
         self.c_idx = 1;
+
         Ok(())
     }
 
     pub fn enter(&mut self, _screen: &mut AlternateScreen<Stdout>) -> Result<(), std::io::Error> {
         let idx: usize = self.c_idx as usize - 1;
         let original_path = String::from(&self.path);
+        let old_idx = self.c_idx;
         let new_path = self
             .list
             .as_ref()
@@ -71,7 +73,10 @@ impl PatraFileState {
                 }
             })
             .unwrap()
-            .filter(|items| items.file_type == PatraFileItemType::Dir)
+            .filter(|items| {
+                logger::log(&format!("items : {:?}", &items));
+                items.file_type == PatraFileItemType::Dir
+            })
             .iter()
             .map(|item| match self.path.as_str() {
                 "/" => format!("/{}", &item.name),
@@ -79,13 +84,22 @@ impl PatraFileState {
             })
             .collect::<Vec<_>>();
 
-        self.path = new_path.last().cloned().unwrap_or(self.path.clone());
+        logger::log(&format!("New path: {:?}", new_path));
+        self.path = match new_path.last().cloned() {
+            Some(x) => x,
+            None => self.path.clone(),
+        };
 
         self.list_dir()
-            .map_err(|_| {
+            .map_err(|e| -> Result<(), std::io::Error> {
                 self.path = original_path;
+                self.c_idx = old_idx;
+                logger::log(&format!("Error opening: {:?}", &e));
+                Ok(())
             })
             .iter();
+        logger::log(&format!("new path: {:?}", &self.path));
+        // logger::log!("new path: {:?}", &self.path)?;
 
         Ok(())
     }
@@ -100,8 +114,6 @@ impl PatraFileState {
                 .to_string();
             self.list_dir()?;
         }
-        let out = std::io::stderr();
-        writeln!(&out, "updated dir {:?}", self.path)?;
         Ok(())
     }
 

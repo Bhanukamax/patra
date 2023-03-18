@@ -13,15 +13,15 @@ use patra::display;
 use patra::logger;
 
 fn main() {
-    let mut screen = stdout().into_alternate_screen().unwrap();
+    // let mut screen = stdout().into_alternate_screen().unwrap();
     if let Err(e) = run() {
-        logger::log(&format!("Error: {}", e)).unwrap();
-        write!(screen, "{} ", termion::cursor::Show).unwrap()
+        logger::log(&format!("Error: {}", e));
+        // write!(screen, "{} ", termion::cursor::Show).unwrap()
     }
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    logger::log("starting app!!")?;
+    logger::log("starting app!!");
     let mut screen = stdout().into_alternate_screen()?;
     let _stdout = stdout().into_raw_mode();
     write!(screen, "{} ", termion::cursor::Hide)?;
@@ -39,13 +39,20 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     screen.flush()?;
     let stdin = stdin();
     for c in stdin.events() {
-        if let Event::Key(Key::Char(key)) = c? {
+        if let Event::Key(Key::Char(key)) = c.as_ref().unwrap() {
             match &key {
                 'q' => break,
                 'j' => file_list_st.next(),
                 'k' => file_list_st.prev(),
                 '-' | 'h' => file_list_st.up_dir()?,
                 '\n' | 'l' => file_list_st.enter(&mut screen)?,
+                _ => {}
+            }
+        }
+        if let Event::Key(Key::Ctrl(key)) = c? {
+            match &key {
+                'p' => file_list_st.prev(),
+                'n' => file_list_st.next(),
                 _ => {}
             }
         }
