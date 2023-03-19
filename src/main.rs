@@ -2,7 +2,7 @@
 // #![allow(unused_imports)]
 extern crate termion;
 
-use std::io::{stdin, stdout, Write};
+use std::io::{self, stdin, stdout, Write};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -11,6 +11,8 @@ mod patra;
 use patra::app::PatraFileState;
 use patra::display;
 use patra::logger;
+use tui::{backend::TermionBackend, Terminal};
+
 
 fn main() {
     // let mut screen = stdout().into_alternate_screen().unwrap();
@@ -22,8 +24,12 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let mut screen = stdout().into_alternate_screen()?;
-    let _stdout = stdout().into_raw_mode();
+    let stdout = io::stdout().into_raw_mode()?;
+    let backend = TermionBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
+
+    let mut screen = io::stdout().into_alternate_screen()?;
+    // let _stdout = stdout().into_raw_mode();
     write!(screen, "{} ", termion::cursor::Hide)?;
 
     let mut file_list_st = PatraFileState::new(String::from(
