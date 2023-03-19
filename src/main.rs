@@ -2,7 +2,7 @@
 // #![allow(unused_imports)]
 extern crate termion;
 
-use std::io::{self, stdin, stdout, Write};
+use std::io::{self, stdin, Write};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -35,9 +35,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         std::env::current_dir().unwrap().to_str().unwrap(),
     ));
 
-    file_list_st
-        .list_dir()
-        .expect("Something went wrong, check if you have permission to read the directory");
+    file_list_st.list_dir();
 
     display::render(&mut terminal, &file_list_st)?;
 
@@ -50,7 +48,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 'j' => file_list_st.next(),
                 'k' => file_list_st.prev(),
                 '-' | 'h' => file_list_st.up_dir()?,
-                '\n' | 'l' => file_list_st.enter(&mut screen)?,
+                '\n' | 'l' => file_list_st.enter()?,
                 _ => {}
             }
         }

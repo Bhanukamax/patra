@@ -1,8 +1,6 @@
 // use super::display::move_cursor_cursor;
 use super::logger;
 use std::fs;
-use std::io::Stdout;
-use termion::screen::AlternateScreen;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum PatraFileItemType {
@@ -20,7 +18,7 @@ pub struct PatraFileListItem {
 
 #[derive(std::clone::Clone, Debug)]
 pub struct PatraFileState {
-    pub list: Option<Vec<PatraFileListItem>>,
+    pub list: Vec<PatraFileListItem>,
     pub path: String,
     pub c_idx: u16,
 }
@@ -29,15 +27,14 @@ impl PatraFileState {
     pub fn new(path: String) -> PatraFileState {
         PatraFileState {
             path,
-            list: None,
+            list: vec![],
             c_idx: 1,
         }
     }
 
-    pub fn list_dir(&mut self) -> std::io::Result<()> {
-        let dir_list = fs::read_dir(&self.path)?;
-        self.list = Some(
-            dir_list
+    pub fn list_dir(&mut self) {
+        if let Ok(list) = fs::read_dir(&self.path) {
+            self.list = list
                 .into_iter()
                 .map(|x| PatraFileListItem {
                     name: String::from(x.as_ref().unwrap().file_name().to_str().unwrap()),
@@ -51,55 +48,22 @@ impl PatraFileState {
                         PatraFileItemType::Unknown
                     },
                 })
-                .collect(),
-        );
-        self.c_idx = 1;
-
-        Ok(())
+                .collect()
+        } else {
+            self.list = vec![]
+        }
     }
 
-    pub fn enter(&mut self, _screen: &mut AlternateScreen<Stdout>) -> Result<(), std::io::Error> {
-        let idx: usize = self.c_idx as usize;
-        let original_path = String::from(&self.path);
-        let old_idx = self.c_idx;
-        let new_path = self
-            .list
-            .as_ref()
-            .map(|item| {
-                if &item.len() > &0 {
-                    Some(&item[idx])
-                } else {
-                    None
-                }
-            })
-            .unwrap()
-            .filter(|items| {
-                logger::debug(&format!("items : {:?}", &items));
-                items.file_type == PatraFileItemType::Dir
-            })
-            .iter()
-            .map(|item| match self.path.as_str() {
+    pub fn enter(&mut self) -> Result<(), std::io::Error> {
+        let item = &self.list[self.c_idx as usize];
+        if item.file_type == PatraFileItemType::Dir {
+            self.path = match self.path.as_str() {
                 "/" => format!("/{}", &item.name),
                 _ => format!("{}/{}", &self.path, &item.name),
-            })
-            .collect::<Vec<_>>();
-
-        logger::debug(&format!("New path: {:?}", new_path));
-        self.path = match new_path.last().cloned() {
-            Some(x) => x,
-            None => self.path.clone(),
-        };
-
-        self.list_dir()
-            .map_err(|e| -> Result<(), std::io::Error> {
-                self.path = original_path;
-                self.c_idx = old_idx;
-                logger::error(&format!("Error opening: {:?}", &e));
-                Ok(())
-            })
-            .iter();
-        logger::debug(&format!("new path: {:?}", &self.path));
-        // logger::log!("new path: {:?}", &self.path)?;
+            };
+            self.list_dir();
+            self.c_idx = 0;
+        }
 
         Ok(())
     }
@@ -112,28 +76,24 @@ impl PatraFileState {
                 .to_str()
                 .unwrap()
                 .to_string();
-            self.list_dir()?;
+            self.list_dir();
         }
         Ok(())
     }
 
     pub fn next(&mut self) {
         logger::debug(&format!("NEXT >>>> {} {}", self.c_idx, self.path));
-        if let Some(items) = &self.list {
-            self.c_idx = match self.c_idx {
-                idx if idx == items.len() as u16 => 0,
-                _ => self.c_idx + 1,
-            }
+        self.c_idx = match self.c_idx {
+            idx if idx == self.list.len() as u16 => 0,
+            _ => self.c_idx + 1,
         }
     }
 
     pub fn prev(&mut self) {
         logger::debug(&format!("PREV <<<<< {} {}", self.c_idx, self.path));
-        if let Some(items) = &self.list {
-            self.c_idx = match self.c_idx {
-                0 => items.len() as u16,
-                _ => self.c_idx - 1,
-            }
+        self.c_idx = match self.c_idx {
+            0 => self.list.len() as u16,
+            _ => self.c_idx - 1,
         }
     }
 }

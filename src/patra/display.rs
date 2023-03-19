@@ -3,7 +3,7 @@ use super::{
     logger,
 };
 use std::io::Write;
-use termion::{self, color, screen::AlternateScreen, style};
+
 use tui::{
     backend::{Backend, TermionBackend},
     layout::{Constraint, Direction, Layout, Rect},
@@ -34,38 +34,43 @@ pub fn render_app<B: Backend>(
     state: &PatraFileState,
 ) -> Result<(), std::io::Error> {
     let chunks = render_ui(f);
-    let mut items = vec![];
-    if let Some(file_list) = state.list.as_ref() {
-        logger::debug(&format!("Some: {:?}", file_list));
-        file_list
-            .iter()
-            .enumerate()
-            .map(|(idx, x)| {
-                items.push(render_item(x, idx as u16, idx as u16 == state.c_idx));
-            })
-            .collect()
-    }
-    let list = List::new(items)
-        .block(Block::default().title("List").borders(Borders::ALL))
-        .style(Style::default().fg(Color::White))
-        .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
-        .highlight_symbol(">>");
-    f.render_widget(list, chunks[1]);
+    render_title(f, chunks[0], state);
+    render_list(f, chunks[1], state);
     Ok(())
 }
 
-
-pub fn render_title<W: Write>(terminal: &mut Terminal<TermionBackend<W>>) {
-    terminal
-        .draw(|f| {
-            let size = f.size();
-            let block = Block::default().title("Patra").borders(Borders::ALL);
-            f.render_widget(block, size);
+pub fn render_list<B: Backend>(f: &mut Frame<B>, chunk: Rect, state: &PatraFileState) {
+    let mut items = vec![];
+    logger::debug(&format!("Some: {:?}", state.list));
+    state
+        .list
+        .iter()
+        .enumerate()
+        .map(|(idx, x)| {
+            items.push(render_item(x, idx as u16, idx as u16 == state.c_idx));
         })
-        .unwrap();
+        .for_each(|_| {});
+
+    let mut border: Borders = Borders::ALL;
+    border.remove(Borders::TOP);
+    let list = List::new(items)
+        .block(Block::default().title(state.path.as_str()).borders(border))
+        .style(Style::default().fg(Color::White))
+        .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+        .highlight_symbol(">>");
+    f.render_widget(list, chunk);
 }
 
-pub fn render_item(item: &PatraFileListItem, idx: u16, selected: bool) -> ListItem {
+pub fn render_title<B: Backend>(f: &mut Frame<B>, chunk: Rect, state: &PatraFileState) {
+    // let path = Text::from(state.path.as_str());
+    let block = Block::default()
+        .title(state.path.as_str())
+        .borders(Borders::RIGHT)
+        .borders(Borders::RIGHT);
+    f.render_widget(block, chunk);
+}
+
+pub fn render_item(item: &PatraFileListItem, _idx: u16, selected: bool) -> ListItem {
     // set_style_file(screen);
     let mut style: Style = Style::default().fg(Color::White);
     let (icon, suffix) = match item.file_type {
