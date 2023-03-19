@@ -59,7 +59,7 @@ impl PatraFileState {
     }
 
     pub fn enter(&mut self, _screen: &mut AlternateScreen<Stdout>) -> Result<(), std::io::Error> {
-        let idx: usize = self.c_idx as usize - 1;
+        let idx: usize = self.c_idx as usize;
         let original_path = String::from(&self.path);
         let old_idx = self.c_idx;
         let new_path = self
@@ -118,18 +118,20 @@ impl PatraFileState {
     }
 
     pub fn next(&mut self) {
+        logger::debug(&format!("NEXT >>>> {} {}", self.c_idx, self.path));
         if let Some(items) = &self.list {
             self.c_idx = match self.c_idx {
-                idx if idx == items.len() as u16 => 1,
+                idx if idx == items.len() as u16 => 0,
                 _ => self.c_idx + 1,
             }
         }
     }
 
     pub fn prev(&mut self) {
+        logger::debug(&format!("PREV <<<<< {} {}", self.c_idx, self.path));
         if let Some(items) = &self.list {
             self.c_idx = match self.c_idx {
-                1 => items.len() as u16,
+                0 => items.len() as u16,
                 _ => self.c_idx - 1,
             }
         }

@@ -13,7 +13,6 @@ use patra::display;
 use patra::logger;
 use tui::{backend::TermionBackend, Terminal};
 
-
 fn main() {
     // let mut screen = stdout().into_alternate_screen().unwrap();
     logger::info("Starting app");
@@ -40,7 +39,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         .list_dir()
         .expect("Something went wrong, check if you have permission to read the directory");
 
-    display::render(&mut screen, &file_list_st)?;
+    display::render(&mut terminal, &file_list_st)?;
 
     screen.flush()?;
     let stdin = stdin();
@@ -63,7 +62,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        display::render(&mut screen, &file_list_st)?;
+        display::render(&mut terminal, &file_list_st)?;
 
         screen.flush().unwrap();
     }

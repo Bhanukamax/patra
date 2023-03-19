@@ -1,98 +1,87 @@
-use super::app::{PatraFileItemType, PatraFileListItem, PatraFileState};
+use super::{
+    app::{PatraFileItemType, PatraFileListItem, PatraFileState},
+    logger,
+};
 use std::io::Write;
 use termion::{self, color, screen::AlternateScreen, style};
+use tui::{
+    backend::{Backend, TermionBackend},
+    layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Modifier, Style},
+    widgets::{Block, Borders, List, ListItem},
+    Frame, Terminal,
+};
 
 pub fn render<W: Write>(
-    screen: &mut AlternateScreen<W>,
+    terminal: &mut Terminal<TermionBackend<W>>,
     state: &PatraFileState,
 ) -> Result<(), std::io::Error> {
-    render_path(screen, state)?;
-    render_app(screen, &state.list.clone().unwrap(), state.c_idx)?;
+    terminal.draw(|f| render_app(f, state).unwrap()).unwrap();
     Ok(())
 }
 
-pub fn render_app<W: Write>(
-    screen: &mut AlternateScreen<W>,
-    file_list: &Vec<PatraFileListItem>,
-    c_idx: u16,
+pub fn render_ui<B: Backend>(f: &mut Frame<B>) -> Vec<Rect> {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([Constraint::Percentage(10), Constraint::Percentage(20)].as_ref())
+        .split(f.size());
+    return chunks;
+}
+
+pub fn render_app<B: Backend>(
+    f: &mut Frame<B>,
+    state: &PatraFileState,
 ) -> Result<(), std::io::Error> {
-    file_list.iter().enumerate().for_each(|(idx, item)| {
-        render_item(screen, &item, idx as u16 + 1, c_idx == idx as u16 + 1).unwrap()
-    });
+    let chunks = render_ui(f);
+    let mut items = vec![];
+    if let Some(file_list) = state.list.as_ref() {
+        logger::debug(&format!("Some: {:?}", file_list));
+        file_list
+            .iter()
+            .enumerate()
+            .map(|(idx, x)| {
+                items.push(render_item(x, idx as u16, idx as u16 == state.c_idx));
+            })
+            .collect()
+    }
+    let list = List::new(items)
+        .block(Block::default().title("List").borders(Borders::ALL))
+        .style(Style::default().fg(Color::White))
+        .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+        .highlight_symbol(">>");
+    f.render_widget(list, chunks[1]);
     Ok(())
 }
 
-pub fn render_path<W: Write>(
-    screen: &mut AlternateScreen<W>,
-    file_list: &PatraFileState,
-) -> Result<(), std::io::Error> {
-    set_style_path(screen);
-    write!(screen, "{}", termion::clear::All)?;
-    move_cursor_cursor(screen, 10, 1);
-    write!(screen, "{} ", "                   ")?;
-    move_cursor_cursor(screen, 10, 1);
-    write!(screen, "{} ", &file_list.path)?;
-    Ok(())
+
+pub fn render_title<W: Write>(terminal: &mut Terminal<TermionBackend<W>>) {
+    terminal
+        .draw(|f| {
+            let size = f.size();
+            let block = Block::default().title("Patra").borders(Borders::ALL);
+            f.render_widget(block, size);
+        })
+        .unwrap();
 }
 
-pub fn render_item<W: Write>(
-    screen: &mut AlternateScreen<W>,
-    item: &PatraFileListItem,
-    idx: u16,
-    selected: bool,
-) -> Result<(), std::io::Error> {
-    set_style_file(screen);
+pub fn render_item(item: &PatraFileListItem, idx: u16, selected: bool) -> ListItem {
+    // set_style_file(screen);
+    let mut style: Style = Style::default().fg(Color::White);
     let (icon, suffix) = match item.file_type {
         PatraFileItemType::Dir => {
-            set_style_dir(screen);
+            style = style.fg(Color::Blue).add_modifier(Modifier::BOLD);
             ("", "/")
         }
         PatraFileItemType::File => ("", ""),
         PatraFileItemType::Sym => ("", ""),
         PatraFileItemType::Unknown => ("⚠", ""),
     };
-
     if selected {
-        write!(screen, "{}", style::Bold)?;
-        move_cursor_cursor(screen, 1, idx + 2);
-        write!(screen, "{} ", icon)?;
-        write!(screen, "{}", style::Underline)?;
-        write!(screen, "{}{}", item.name, suffix)?;
-        write!(screen, "{}", style::NoBold)?;
-        write!(screen, "{}", style::NoUnderline)?;
-    } else {
-        move_cursor_cursor(screen, 1, idx + 2);
-        write!(screen, "{}", style::Bold)?;
-        write!(screen, "{}", icon)?;
-        write!(screen, "{}", style::NoBold)?;
-        write!(screen, " {}{}", item.name.to_string(), suffix)?;
+        style = style
+            .add_modifier(Modifier::BOLD)
+            .add_modifier(Modifier::UNDERLINED);
     }
-    Ok(())
-}
 
-pub fn set_style_dir<W: Write>(screen: &mut AlternateScreen<W>) {
-    write!(screen, "{}", color::Fg(color::Blue)).unwrap();
-    write!(screen, "{}", color::Bg(color::Black)).unwrap();
-}
-
-pub fn set_style_path<W: Write>(screen: &mut AlternateScreen<W>) {
-    write!(screen, "{}", color::Fg(color::Yellow)).unwrap();
-    write!(screen, "{}", color::Bg(color::Black)).unwrap();
-}
-
-pub fn scroll_up<W: Write>(screen: &mut AlternateScreen<W>) {
-    write!(screen, "{}", termion::scroll::Up(3)).unwrap();
-}
-
-pub fn scroll_down<W: Write>(screen: &mut AlternateScreen<W>) {
-    write!(screen, "{}", termion::scroll::Down(3)).unwrap();
-}
-
-pub fn set_style_file<W: Write>(screen: &mut AlternateScreen<W>) {
-    write!(screen, "{}", color::Fg(color::White)).unwrap();
-    write!(screen, "{}", color::Bg(color::Black)).unwrap();
-}
-
-pub fn move_cursor_cursor<W: Write>(screen: &mut AlternateScreen<W>, x: u16, y: u16) {
-    write!(screen, "{}", termion::cursor::Goto(x, y)).unwrap();
+    return ListItem::new(format!("{} {}{}", icon, item.name, suffix)).style(style);
 }
