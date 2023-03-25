@@ -20,7 +20,7 @@ pub struct PatraFileListItem {
 
 #[derive(std::clone::Clone, Debug)]
 pub struct PatraFileState {
-    pub list: Option<Vec<PatraFileListItem>>,
+    pub list: Vec<PatraFileListItem>,
     pub path: String,
     pub c_idx: u16,
 }
@@ -29,30 +29,28 @@ impl PatraFileState {
     pub fn new(path: String) -> PatraFileState {
         PatraFileState {
             path,
-            list: None,
+            list: vec![],
             c_idx: 1,
         }
     }
 
     pub fn list_dir(&mut self) -> std::io::Result<()> {
         let dir_list = fs::read_dir(&self.path)?;
-        self.list = Some(
-            dir_list
-                .into_iter()
-                .map(|x| PatraFileListItem {
-                    name: String::from(x.as_ref().unwrap().file_name().to_str().unwrap()),
-                    file_type: if x.as_ref().unwrap().path().is_dir() {
-                        PatraFileItemType::Dir
-                    } else if x.as_ref().unwrap().path().is_file() {
-                        PatraFileItemType::File
-                    } else if x.unwrap().path().is_symlink() {
-                        PatraFileItemType::Sym
-                    } else {
-                        PatraFileItemType::Unknown
-                    },
-                })
-                .collect(),
-        );
+        self.list = dir_list
+            .into_iter()
+            .map(|x| PatraFileListItem {
+                name: String::from(x.as_ref().unwrap().file_name().to_str().unwrap()),
+                file_type: if x.as_ref().unwrap().path().is_dir() {
+                    PatraFileItemType::Dir
+                } else if x.as_ref().unwrap().path().is_file() {
+                    PatraFileItemType::File
+                } else if x.unwrap().path().is_symlink() {
+                    PatraFileItemType::Sym
+                } else {
+                    PatraFileItemType::Unknown
+                },
+            })
+            .collect();
         self.c_idx = 1;
 
         Ok(())
@@ -62,23 +60,19 @@ impl PatraFileState {
         let idx: usize = self.c_idx as usize - 1;
         let original_path = String::from(&self.path);
         let old_idx = self.c_idx;
-        let new_path = self
+        let new_path = &self
             .list
-            .as_ref()
-            .map(|item| {
-                if &item.len() > &0 {
-                    Some(&item[idx])
+            .iter()
+            .enumerate()
+            .filter(|(i, item)| {
+                logger::debug(&format!("items : {:?}", &item));
+                if item.file_type == PatraFileItemType::Dir && i == &idx {
+                    true
                 } else {
-                    None
+                    false
                 }
             })
-            .unwrap()
-            .filter(|items| {
-                logger::debug(&format!("items : {:?}", &items));
-                items.file_type == PatraFileItemType::Dir
-            })
-            .iter()
-            .map(|item| match self.path.as_str() {
+            .map(|(_, item)| match self.path.as_str() {
                 "/" => format!("/{}", &item.name),
                 _ => format!("{}/{}", &self.path, &item.name),
             })
@@ -118,20 +112,18 @@ impl PatraFileState {
     }
 
     pub fn next(&mut self) {
-        if let Some(items) = &self.list {
-            self.c_idx = match self.c_idx {
-                idx if idx == items.len() as u16 => 1,
-                _ => self.c_idx + 1,
-            }
-        }
+        self.c_idx = if self.c_idx == self.list.len() as u16 {
+            1
+        } else {
+            self.c_idx + 1
+        };
     }
 
     pub fn prev(&mut self) {
-        if let Some(items) = &self.list {
-            self.c_idx = match self.c_idx {
-                1 => items.len() as u16,
-                _ => self.c_idx - 1,
-            }
+        self.c_idx = if self.c_idx == 1 {
+            self.list.len() as u16
+        } else {
+            self.c_idx - 1
         }
     }
 }

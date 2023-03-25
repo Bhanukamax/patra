@@ -7,7 +7,7 @@ pub fn render<W: Write>(
     state: &PatraFileState,
 ) -> Result<(), std::io::Error> {
     render_path(screen, state)?;
-    render_app(screen, &state.list.clone().unwrap(), state.c_idx)?;
+    render_app(screen, &state.list.clone(), state.c_idx)?;
     Ok(())
 }
 
@@ -78,14 +78,6 @@ pub fn set_style_dir<W: Write>(screen: &mut AlternateScreen<W>) {
 pub fn set_style_path<W: Write>(screen: &mut AlternateScreen<W>) {
     write!(screen, "{}", color::Fg(color::Yellow)).unwrap();
     write!(screen, "{}", color::Bg(color::Black)).unwrap();
-}
-
-pub fn scroll_up<W: Write>(screen: &mut AlternateScreen<W>) {
-    write!(screen, "{}", termion::scroll::Up(3)).unwrap();
-}
-
-pub fn scroll_down<W: Write>(screen: &mut AlternateScreen<W>) {
-    write!(screen, "{}", termion::scroll::Down(3)).unwrap();
 }
 
 pub fn set_style_file<W: Write>(screen: &mut AlternateScreen<W>) {
