@@ -1,40 +1,30 @@
-use std::default;
-use std::io::{self, stdin, stdout, Write};
+use std::io::{self, stdout, Write};
 
-use crate::terminal;
 use crate::ui::Rect;
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
+#[derive(Default)]
 pub struct App {
     should_quite: bool,
 }
 
-impl Default for App {
-    fn default() -> Self {
-        Self {
-            should_quite: false,
-        }
-    }
-}
-
 impl App {
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<(), std::io::Error> {
         println!("running the app");
         let _stdout = stdout().into_raw_mode().unwrap();
         println!("{}", termion::clear::All);
         print!("{}", termion::cursor::Goto(1, 1));
-        print!("{}", "bat");
 
-        let rect = Rect::new(5 as u16, 5 as u16, 20 as u16, 10 as u16);
+        let rect = Rect::new(5_u16, 5_u16, 20_u16, 10_u16);
         rect.draw();
 
         print!("{}", termion::color::Fg(termion::color::Blue));
-        let rect = Rect::new(2 as u16, 2 as u16, 30 as u16, 20 as u16);
+        let rect = Rect::new(2_u16, 2_u16, 30_u16, 20_u16);
         rect.draw();
 
-        io::stdout().flush();
+        io::stdout().flush()?;
 
         for key in io::stdin().keys() {
             // println!("{}", termion::cursor::Goto(1, 1));
@@ -46,7 +36,8 @@ impl App {
             if self.should_quite {
                 break;
             }
-        }
+        };
+        Ok(())
     }
 
     pub fn handle_key(&mut self, key: &Key) {

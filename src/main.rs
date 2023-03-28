@@ -6,5 +6,7 @@ pub mod ui;
 
 fn main() {
     let mut app = App::default();
-    app.run()
+    if let Err(e) = app.run() {
+        println!("Something went wrong {}", e)
+    }
 }
