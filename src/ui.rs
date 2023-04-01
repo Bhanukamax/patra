@@ -1,6 +1,15 @@
+#[derive(Clone)]
 struct Position {
     x: u16,
     y: u16,
+}
+
+impl Position {
+    pub fn add(&self, pos: Self) -> Self {
+        let x = self.x + pos.x;
+        let y = self.y + pos.y;
+        Position { x, y }
+    }
 }
 
 struct Size {
@@ -11,6 +20,7 @@ struct Size {
 pub struct Rect {
     position: Position,
     size: Size,
+    cursor: Position,
 }
 
 // ╭ (U+256D) - Top left corner
@@ -19,7 +29,6 @@ pub struct Rect {
 // ╯ (U+256F) - Bottom right corner
 // ─ (U+2500) - Horizontal line
 // │ (U+2502) - Vertical line
-
 
 enum BorderChars {
     TopLeftCorner,
@@ -44,21 +53,42 @@ impl ToString for BorderChars {
 }
 
 impl Rect {
+    pub fn add_line(&mut self, text: &str) {
+        print!("{}", termion::cursor::Goto(self.cursor.x, self.cursor.y));
+        print!("{:}", text);
+        self.cursor.y += 1;
+    }
+
     pub fn new(x: u16, y: u16, w: u16, h: u16) -> Self {
         let position = Position { x, y };
+        let cursor = Position {
+            x: x.saturating_add_signed(1),
+            y: y.saturating_add(1),
+        };
         let size = Size {
             width: w,
             height: h,
         };
-        Rect { position, size }
+        Rect {
+            position,
+            size,
+            cursor,
+        }
     }
     pub fn draw(&self) {
         // horizontal
-        for i in self.position.x..self.size.width {
+
+        let Size { width, height } = self.size;
+        let end_pos = self.position.clone().add(Position {
+            x: width,
+            y: height,
+        });
+
+        for i in self.position.x..end_pos.x {
             print!("{}", termion::cursor::Goto(i, self.position.y));
             print!("{:}", BorderChars::HorizontalLine.to_string());
         }
-        for i in self.position.x..self.size.width {
+        for i in self.position.x..end_pos.x {
             print!("{}", termion::cursor::Goto(i, self.size.height));
             print!("{:}", BorderChars::HorizontalLine.to_string());
         }
@@ -68,17 +98,22 @@ impl Rect {
             print!("{:}", BorderChars::VerticalLine.to_string());
         }
         for i in self.position.y..self.size.height {
-            print!("{}", termion::cursor::Goto(self.size.width, i + 1));
+            print!("{}", termion::cursor::Goto(end_pos.x, i + 1));
             print!("{:}", BorderChars::VerticalLine.to_string());
         }
-        print!("{}", termion::cursor::Goto(self.position.x, self.position.y));
+        print!(
+            "{}",
+            termion::cursor::Goto(self.position.x, self.position.y)
+        );
         print!("{:}", BorderChars::TopLeftCorner.to_string());
-        print!("{}", termion::cursor::Goto(self.size.width, self.position.y));
+        print!("{}", termion::cursor::Goto(end_pos.x, self.position.y));
         print!("{:}", BorderChars::TopRightCorner.to_string());
-        print!("{}", termion::cursor::Goto(self.position.x, self.size.height));
+        print!(
+            "{}",
+            termion::cursor::Goto(self.position.x, self.size.height)
+        );
         print!("{:}", BorderChars::BottomLeftCorner.to_string());
-        print!("{}", termion::cursor::Goto(self.size.width, self.size.height));
+        print!("{}", termion::cursor::Goto(end_pos.x, self.size.height));
         print!("{:}", BorderChars::BottomRightCorner.to_string());
-
     }
 }
