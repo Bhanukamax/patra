@@ -89,15 +89,15 @@ impl Rect {
             print!("{:}", BorderChars::HorizontalLine.to_string());
         }
         for i in self.position.x..end_pos.x {
-            print!("{}", termion::cursor::Goto(i, self.size.height));
+            print!("{}", termion::cursor::Goto(i, end_pos.y));
             print!("{:}", BorderChars::HorizontalLine.to_string());
         }
         // vertical
-        for i in self.position.y..self.size.height {
+        for i in self.position.y..end_pos.y {
             print!("{}", termion::cursor::Goto(self.position.x, i + 1));
             print!("{:}", BorderChars::VerticalLine.to_string());
         }
-        for i in self.position.y..self.size.height {
+        for i in self.position.y..end_pos.y {
             print!("{}", termion::cursor::Goto(end_pos.x, i + 1));
             print!("{:}", BorderChars::VerticalLine.to_string());
         }
@@ -110,10 +110,10 @@ impl Rect {
         print!("{:}", BorderChars::TopRightCorner.to_string());
         print!(
             "{}",
-            termion::cursor::Goto(self.position.x, self.size.height)
+            termion::cursor::Goto(self.position.x, end_pos.y)
         );
         print!("{:}", BorderChars::BottomLeftCorner.to_string());
-        print!("{}", termion::cursor::Goto(end_pos.x, self.size.height));
+        print!("{}", termion::cursor::Goto(end_pos.x, end_pos.y));
         print!("{:}", BorderChars::BottomRightCorner.to_string());
     }
 }
