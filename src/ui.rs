@@ -17,6 +17,14 @@ struct Size {
     width: u16,
 }
 
+#[allow(dead_code)]
+pub struct ListWidget {
+    list: Vec<String>,
+    selected_index: usize,
+    frame: Rect,
+    scroll: Position,
+}
+
 pub struct Rect {
     position: Position,
     size: Size,
@@ -108,10 +116,7 @@ impl Rect {
         print!("{:}", BorderChars::TopLeftCorner.to_string());
         print!("{}", termion::cursor::Goto(end_pos.x, self.position.y));
         print!("{:}", BorderChars::TopRightCorner.to_string());
-        print!(
-            "{}",
-            termion::cursor::Goto(self.position.x, end_pos.y)
-        );
+        print!("{}", termion::cursor::Goto(self.position.x, end_pos.y));
         print!("{:}", BorderChars::BottomLeftCorner.to_string());
         print!("{}", termion::cursor::Goto(end_pos.x, end_pos.y));
         print!("{:}", BorderChars::BottomRightCorner.to_string());

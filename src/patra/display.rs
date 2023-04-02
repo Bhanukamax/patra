@@ -17,7 +17,7 @@ pub fn render_app<W: Write>(
     c_idx: u16,
 ) -> Result<(), std::io::Error> {
     file_list.iter().enumerate().for_each(|(idx, item)| {
-        render_item(screen, &item, idx as u16 + 1, c_idx == idx as u16 + 1).unwrap()
+        render_item(screen, item, idx as u16 + 1, c_idx == idx as u16 + 1).unwrap()
     });
     Ok(())
 }
@@ -29,7 +29,7 @@ pub fn render_path<W: Write>(
     set_style_path(screen);
     write!(screen, "{}", termion::clear::All)?;
     move_cursor_cursor(screen, 10, 1);
-    write!(screen, "{} ", "                   ")?;
+    write!(screen, "                   ")?;
     move_cursor_cursor(screen, 10, 1);
     write!(screen, "{} ", &file_list.path)?;
     Ok(())
