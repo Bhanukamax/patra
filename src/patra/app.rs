@@ -66,11 +66,7 @@ impl PatraFileState {
             .enumerate()
             .filter(|(i, item)| {
                 logger::debug(&format!("items : {:?}", &item));
-                if item.file_type == PatraFileItemType::Dir && i == &idx {
-                    true
-                } else {
-                    false
-                }
+                item.file_type == PatraFileItemType::Dir && i == &idx
             })
             .map(|(_, item)| match self.path.as_str() {
                 "/" => format!("/{}", &item.name),
