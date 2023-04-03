@@ -56,7 +56,7 @@ where
             .enumerate()
             .for_each(|(index, item)| {
                 if (index as u16) < count - 1 {
-                    self.frame.add_line(&((self.render)(item.clone())));
+                    self.frame.add_line(&((self.render)(item)));
                 }
             })
     }

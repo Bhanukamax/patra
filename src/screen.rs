@@ -11,6 +11,8 @@ impl Default for Screen {
     }
 }
 
+type PatraFileListWidget = ListWidget<PatraFileListItem, Box<dyn Fn(&PatraFileListItem) -> String>>;
+
 impl Screen {
     pub fn render() -> Result<(), std::io::Error> {
         println!("{}", termion::clear::All);
@@ -24,12 +26,11 @@ impl Screen {
         let file_list_one = Rect::new(2_u16, 3_u16, 12_u16, 5_u16);
         file_list_one.draw();
 
-        let mut list: ListWidget<PatraFileListItem, Box<dyn Fn(&PatraFileListItem) -> String>> =
-            ListWidget::new(
-                [].to_vec(),
-                file_list_one,
-                Box::new(|item| item.name.as_str().to_string()),
-            );
+        let mut list: PatraFileListWidget = ListWidget::new(
+            [].to_vec(),
+            file_list_one,
+            Box::new(|item| item.name.as_str().to_string()),
+        );
 
         print!("{}", termion::color::Fg(termion::color::White));
 
