@@ -20,7 +20,7 @@ pub struct PatraFileListItem {
 
 #[derive(std::clone::Clone, Debug)]
 pub struct PatraFileState {
-    pub list: Vec<PatraFileListItem>,
+    list: Vec<PatraFileListItem>,
     pub path: String,
     pub c_idx: u16,
 }
@@ -32,6 +32,10 @@ impl PatraFileState {
             list: vec![],
             c_idx: 1,
         }
+    }
+
+    pub fn get_list(&self) -> &Vec<PatraFileListItem> {
+        &self.list
     }
 
     pub fn list_dir(&mut self) -> std::io::Result<()> {

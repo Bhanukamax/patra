@@ -18,11 +18,48 @@ struct Size {
 }
 
 #[allow(dead_code)]
-pub struct ListWidget {
-    list: Vec<String>,
+pub struct ListWidget<T, F>
+where
+    F: Fn(&T) -> String,
+{
+    list: Vec<T>,
     selected_index: usize,
     frame: Rect,
     scroll: Position,
+    render: F,
+}
+
+impl<T, F> ListWidget<T, F>
+where
+    F: Fn(&T) -> String,
+    T: std::fmt::Debug,
+{
+    pub fn new(list: Vec<T>, frame: Rect, render: F) -> ListWidget<T, F> {
+        ListWidget {
+            list,
+            selected_index: 0,
+            frame,
+            scroll: Position { x: 0, y: 0 },
+            render,
+        }
+    }
+
+    pub fn update_list(&mut self, list: Vec<T>) {
+        self.list = list
+    }
+
+    pub fn populate(&mut self) {
+        let count = self.frame.size.height;
+        self.list
+            .iter()
+            .clone()
+            .enumerate()
+            .for_each(|(index, item)| {
+                if (index as u16) < count - 1 {
+                    self.frame.add_line(&((self.render)(item.clone())));
+                }
+            })
+    }
 }
 
 pub struct Rect {

@@ -1,5 +1,8 @@
 pub struct Screen;
-use crate::ui::Rect;
+use crate::{
+    patra::app::{PatraFileListItem, PatraFileState},
+    ui::{ListWidget, Rect},
+};
 use std::io::{self, Write};
 
 impl Default for Screen {
@@ -18,26 +21,37 @@ impl Screen {
 
         print!("{}", termion::color::Fg(termion::color::Blue));
 
-        let mut file_list = Rect::new(2_u16, 3_u16, 22_u16, 10_u16);
-        file_list.draw();
-        print!("{}", termion::color::Fg(termion::color::White));
-        file_list.add_line("file one");
-        file_list.add_line("file two");
-        file_list.add_line("file three");
+        let file_list_one = Rect::new(2_u16, 3_u16, 12_u16, 5_u16);
+        file_list_one.draw();
 
-        let mut file_list = Rect::new(25_u16, 3_u16, 30_u16, 10_u16);
-        file_list.draw();
+        let mut list: ListWidget<PatraFileListItem, Box<dyn Fn(&PatraFileListItem) -> String>> =
+            ListWidget::new(
+                [].to_vec(),
+                file_list_one,
+                Box::new(|item| item.name.as_str().to_string()),
+            );
+
         print!("{}", termion::color::Fg(termion::color::White));
-        file_list.add_line("file one");
-        file_list.add_line("file two");
-        file_list.add_line("file three");
+
+        let mut file_list_two = Rect::new(25_u16, 3_u16, 30_u16, 10_u16);
+        file_list_two.draw();
+        print!("{}", termion::color::Fg(termion::color::White));
+
+        let mut state = PatraFileState::new("./".to_string());
+        state.list_dir()?;
+
+        list.update_list(state.clone().get_list().clone().to_vec());
+
+        list.populate();
 
         let mut file_list = Rect::new(2_u16, 14_u16, 30_u16, 10_u16);
         file_list.draw();
-        print!("{}", termion::color::Fg(termion::color::White));
-        file_list.add_line("file one");
-        file_list.add_line("file two");
-        file_list.add_line("file three");
+
+        state.get_list().iter().for_each(|file| {
+            // file_list_one.add_line(file.name.as_str());
+            file_list_two.add_line(file.name.as_str());
+            file_list.add_line(file.name.as_str());
+        });
 
         io::stdout().flush()?;
         Ok(())
