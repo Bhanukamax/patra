@@ -1,3 +1,5 @@
+use termion::style;
+
 #[derive(Clone)]
 struct Position {
     x: u16,
@@ -57,6 +59,11 @@ where
             .for_each(|(index, item)| {
                 if (index as u16) < count - 1 {
                     self.frame.add_line(&((self.render)(item)));
+                }
+                if index == self.selected_index {
+                    print!("{}", style::Underline)
+                } else {
+                    print!("{}", style::NoUnderline)
                 }
             })
     }
