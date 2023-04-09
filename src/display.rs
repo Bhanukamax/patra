@@ -106,36 +106,45 @@ impl Display {
         };
 
         if selected {
-            write!(&mut self.screen, "{}", style::Bold)?;
-            self.move_cursor_cursor(1, idx + 2);
-            write!(&mut self.screen, "{} ", icon)?;
-            write!(&mut self.screen, "{}", style::Underline)?;
-            write!(&mut self.screen, "{}{}", item.name, suffix)?;
-            write!(&mut self.screen, "{}", style::NoBold)?;
-            write!(&mut self.screen, "{}", style::NoUnderline)?;
+            self.set_style_focus();
         } else {
-            self.move_cursor_cursor(1, idx + 2);
-            write!(&mut self.screen, "{}", style::Bold)?;
-            write!(&mut self.screen, "{}", icon)?;
-            write!(&mut self.screen, "{}", style::NoBold)?;
-            write!(&mut self.screen, " {}{}", item.name, suffix)?;
+            self.set_style_unfocus();
         }
+        self.move_cursor_cursor(1, idx + 2);
+        write!(&mut self.screen, "{}", style::Bold)?;
+        write!(&mut self.screen, "{}", icon)?;
+        write!(&mut self.screen, "{}", style::NoBold)?;
+        write!(&mut self.screen, " {}{}", item.name, suffix)?;
+        self.set_style_unfocus();
+
         Ok(())
     }
 
     pub fn set_style_dir(&mut self) {
-        write!(&mut self.screen, "{}", color::Fg(color::Blue)).unwrap();
+        write!(&mut self.screen, "{}", color::Fg(color::LightBlue)).unwrap();
         write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
     }
 
     pub fn set_style_path(&mut self) {
         write!(&mut self.screen, "{}", color::Fg(color::Yellow)).unwrap();
-        write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
     }
 
     pub fn set_style_file(&mut self) {
         write!(&mut self.screen, "{}", color::Fg(color::White)).unwrap();
         write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
+    }
+    pub fn set_style_unfocus(&mut self) {
+        write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
+        write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
+    }
+    pub fn set_style_focus(&mut self) {
+        let value = 50;
+        write!(
+            &mut self.screen,
+            "{}",
+            color::Bg(color::Rgb(value, value, value))
+        )
+        .unwrap();
     }
 
     pub fn move_cursor_cursor(&mut self, x: u16, y: u16) {
