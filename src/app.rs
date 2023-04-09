@@ -1,8 +1,6 @@
 // use super::display::move_cursor_cursor;
 use crate::logger;
 use std::fs;
-use std::io::Stdout;
-use termion::screen::AlternateScreen;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum PatraFileItemType {
@@ -56,7 +54,7 @@ impl PatraFileState {
         Ok(())
     }
 
-    pub fn enter(&mut self, _screen: &mut AlternateScreen<Stdout>) -> Result<(), std::io::Error> {
+    pub fn enter(&mut self) -> Result<(), std::io::Error> {
         let idx: usize = self.c_idx as usize - 1;
         let original_path = String::from(&self.path);
         let old_idx = self.c_idx;

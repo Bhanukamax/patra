@@ -47,14 +47,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 'j' => file_list_st.next(),
                 'k' => file_list_st.prev(),
                 '-' | 'h' => file_list_st.up_dir()?,
-                '\n' | 'l' => file_list_st.enter(&mut screen)?,
-                _ => {}
-            }
-        }
-        if let Event::Key(Key::Ctrl(key)) = c? {
-            match &key {
-                // 'p' => display::scroll_up(&mut screen),
-                // 'n' => display::scroll_down(&mut screen),
+                '\n' | 'l' => file_list_st.enter()?,
                 _ => {}
             }
         }
