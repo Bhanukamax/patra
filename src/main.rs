@@ -22,7 +22,6 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    // let mut screen = stdout().into_alternate_screen()?;
     let mut display = Display::new();
     let _stdout = stdout().into_raw_mode();
     display.hide_cursor()?;
