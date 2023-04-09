@@ -6,6 +6,7 @@ mod app;
 mod display;
 mod logger;
 
+use clap::Parser;
 use display::Display;
 use std::io::{stdin, stdout};
 use termion::event::{Event, Key};
@@ -14,8 +15,16 @@ use termion::raw::IntoRawMode;
 
 use app::App;
 
+#[derive(Parser)]
+struct Args {
+    #[arg(short, long)]
+    selection_path: Option<String>,
+}
+
 fn main() {
     logger::info("Starting app");
+    let args = Args::parse();
+    logger::debug(&format!("Args: {:?}", args.selection_path));
     if let Err(e) = run() {
         logger::error(&format!("Error: {}", e));
     }
