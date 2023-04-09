@@ -13,11 +13,11 @@ pub fn render<W: Write>(
 
 pub fn render_app<W: Write>(
     screen: &mut AlternateScreen<W>,
-    file_list: &Vec<PatraFileListItem>,
+    file_list: &[PatraFileListItem],
     c_idx: u16,
 ) -> Result<(), std::io::Error> {
     file_list.iter().enumerate().for_each(|(idx, item)| {
-        render_item(screen, &item, idx as u16 + 1, c_idx == idx as u16 + 1).unwrap()
+        render_item(screen, item, idx as u16 + 1, c_idx == idx as u16 + 1).unwrap()
     });
     Ok(())
 }
@@ -29,7 +29,7 @@ pub fn render_path<W: Write>(
     set_style_path(screen);
     write!(screen, "{}", termion::clear::All)?;
     move_cursor_cursor(screen, 10, 1);
-    write!(screen, "{} ", "                   ")?;
+    write!(screen, "                   ")?;
     move_cursor_cursor(screen, 10, 1);
     write!(screen, "{} ", &file_list.path)?;
     Ok(())
@@ -65,7 +65,7 @@ pub fn render_item<W: Write>(
         write!(screen, "{}", style::Bold)?;
         write!(screen, "{}", icon)?;
         write!(screen, "{}", style::NoBold)?;
-        write!(screen, " {}{}", item.name.to_string(), suffix)?;
+        write!(screen, " {}{}", item.name, suffix)?;
     }
     Ok(())
 }
