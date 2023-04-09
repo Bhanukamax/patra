@@ -1,22 +1,24 @@
 use crate::logger;
-use std::fs;
+use std::{fs, io::Write};
 
 #[derive(Default)]
 pub struct Flags {
-    _write_to_file: bool,
+    write_to_file: bool,
 }
 
 pub struct App {
     pub should_quit: bool,
     pub state: PatraFileState,
-    _flags: Flags,
+    pub flags: Flags,
+    pub selection_file_path: String,
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
+            selection_file_path: "".into(),
             should_quit: false,
-            _flags: Flags::default(),
+            flags: Flags::default(),
             state: PatraFileState::new(String::from(
                 std::env::current_dir().unwrap().to_str().unwrap(),
             )),
@@ -25,8 +27,51 @@ impl Default for App {
 }
 
 impl App {
+    pub fn set_should_write_to_file(&mut self, file_path: String) {
+        self.flags.write_to_file = true;
+        self.selection_file_path = file_path;
+    }
+
     pub fn quit(&mut self) {
         self.should_quit = true;
+    }
+
+    pub fn enter(&mut self) -> Result<(), std::io::Error> {
+        let idx: usize = self.state.c_idx as usize - 1;
+        let original_path = String::from(&self.state.path);
+        let old_idx = self.state.c_idx;
+        let current_file = self.state.list.get(idx).unwrap();
+
+        logger::debug(&format!("Current file: {:?}", current_file));
+        let mut new_path = original_path.clone();
+        if current_file.file_type == PatraFileItemType::Dir {
+            new_path = match self.state.path.as_str() {
+                "/" => format!("/{}", &current_file.name),
+                _ => format!("{}/{}", &self.state.path, &current_file.name),
+            }
+        } else if self.flags.write_to_file {
+            let mut file = fs::File::create(self.selection_file_path.clone())
+                .expect("Could not output file to write the selection path");
+            write!(file, "{}/{}", &original_path, current_file.name)
+                .expect("Could not write to file");
+            self.quit()
+        }
+
+        logger::debug(&format!("New path: {:?}", new_path));
+        self.state.path = new_path;
+
+        self.state
+            .list_dir()
+            .map_err(|e| -> Result<(), std::io::Error> {
+                self.state.path = original_path;
+                self.state.c_idx = old_idx;
+                logger::error(&format!("Error opening: {:?}", &e));
+                Ok(())
+            })
+            .iter();
+        logger::debug(&format!("new path: {:?}", &self.state.path));
+
+        Ok(())
     }
 }
 
@@ -78,43 +123,6 @@ impl PatraFileState {
             })
             .collect();
         self.c_idx = 1;
-
-        Ok(())
-    }
-
-    pub fn enter(&mut self) -> Result<(), std::io::Error> {
-        let idx: usize = self.c_idx as usize - 1;
-        let original_path = String::from(&self.path);
-        let old_idx = self.c_idx;
-        let new_path = &self
-            .list
-            .iter()
-            .enumerate()
-            .filter(|(i, item)| {
-                logger::debug(&format!("items : {:?}", &item));
-                item.file_type == PatraFileItemType::Dir && i == &idx
-            })
-            .map(|(_, item)| match self.path.as_str() {
-                "/" => format!("/{}", &item.name),
-                _ => format!("{}/{}", &self.path, &item.name),
-            })
-            .collect::<Vec<_>>();
-
-        logger::debug(&format!("New path: {:?}", new_path));
-        self.path = match new_path.last().cloned() {
-            Some(x) => x,
-            None => self.path.clone(),
-        };
-
-        self.list_dir()
-            .map_err(|e| -> Result<(), std::io::Error> {
-                self.path = original_path;
-                self.c_idx = old_idx;
-                logger::error(&format!("Error opening: {:?}", &e));
-                Ok(())
-            })
-            .iter();
-        logger::debug(&format!("new path: {:?}", &self.path));
 
         Ok(())
     }
