@@ -46,6 +46,7 @@ impl Display {
         let scroll_pos: u16 = state.c_idx.saturating_sub(self.list_widget.size.h);
         self.render_path(state)?;
         self.render_app(&state.list.clone(), state.c_idx, scroll_pos)?;
+        self.flush()?;
         Ok(())
     }
     pub fn hide_cursor(&mut self) -> Result<(), std::io::Error> {
