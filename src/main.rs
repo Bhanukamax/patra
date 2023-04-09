@@ -23,15 +23,18 @@ struct Args {
 
 fn main() {
     logger::info("Starting app");
-    let args = Args::parse();
-    logger::debug(&format!("Args: {:?}", args.selection_path));
     if let Err(e) = run() {
         logger::error(&format!("Error: {}", e));
     }
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
+    let args = Args::parse();
+    logger::debug(&format!("Args: {:?}", args.selection_path));
     let mut app = App::default();
+    if let Some(path) = args.selection_path {
+        app.set_should_write_to_file(path);
+    }
     let mut display = Display::new();
     let _stdout = stdout().into_raw_mode();
     display.hide_cursor()?;
@@ -49,7 +52,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 'j' => app.state.next(),
                 'k' => app.state.prev(),
                 '-' | 'h' => app.state.up_dir()?,
-                '\n' | 'l' => app.state.enter()?,
+                '\n' | 'l' => app.enter()?,
                 _ => {}
             }
         }
