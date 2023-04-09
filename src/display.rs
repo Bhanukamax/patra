@@ -1,6 +1,33 @@
 use crate::app::{PatraFileItemType, PatraFileListItem, PatraFileState};
-use std::io::Write;
+// use std::io::Write;
+use std::io::{stdout, Write};
+use termion::screen::IntoAlternateScreen;
 use termion::{self, color, screen::AlternateScreen, style};
+
+pub struct Display {
+    pub screen: AlternateScreen<std::io::Stdout>,
+}
+
+impl Display {
+    pub fn new() -> Self {
+        Self {
+            screen: stdout().into_alternate_screen().unwrap(),
+        }
+    }
+    pub fn flush(&mut self) -> Result<(), std::io::Error> {
+        self.screen.flush()
+    }
+    pub fn render(&mut self, state: &PatraFileState) -> Result<(), std::io::Error> {
+        render(&mut self.screen, state)?;
+        Ok(())
+    }
+    pub fn hide_cursor(&mut self) -> Result<(), std::io::Error> {
+        write!(self.screen, "{} ", termion::cursor::Hide)
+    }
+    pub fn show_cursor(&mut self) -> Result<(), std::io::Error> {
+        write!(self.screen, "{} ", termion::cursor::Show)
+    }
+}
 
 pub fn render<W: Write>(
     screen: &mut AlternateScreen<W>,

@@ -2,31 +2,30 @@
 // #![allow(unused_imports)]
 extern crate termion;
 
-mod logger;
 mod app;
 mod display;
+mod logger;
 
-use std::io::{stdin, stdout, Write};
+use display::Display;
+use std::io::{stdin, stdout};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
-use termion::screen::IntoAlternateScreen;
 
 use app::PatraFileState;
 
 fn main() {
-    // let mut screen = stdout().into_alternate_screen().unwrap();
     logger::info("Starting app");
     if let Err(e) = run() {
         logger::error(&format!("Error: {}", e));
-        // write!(screen, "{} ", termion::cursor::Show).unwrap()
     }
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let mut screen = stdout().into_alternate_screen()?;
+    // let mut screen = stdout().into_alternate_screen()?;
+    let mut display = Display::new();
     let _stdout = stdout().into_raw_mode();
-    write!(screen, "{} ", termion::cursor::Hide)?;
+    display.hide_cursor()?;
 
     let mut file_list_st = PatraFileState::new(String::from(
         std::env::current_dir().unwrap().to_str().unwrap(),
@@ -36,9 +35,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         .list_dir()
         .expect("Something went wrong, check if you have permission to read the directory");
 
-    display::render(&mut screen, &file_list_st)?;
-
-    screen.flush()?;
+    display.render(&file_list_st)?;
+    display.flush()?;
     let stdin = stdin();
     for c in stdin.events() {
         if let Event::Key(Key::Char(key)) = c.as_ref().unwrap() {
@@ -52,10 +50,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        display::render(&mut screen, &file_list_st)?;
+        display.render(&file_list_st)?;
 
-        screen.flush().unwrap();
+        display.flush()?;
     }
-    write!(screen, "{} ", termion::cursor::Show)?;
+    display.show_cursor()?;
     Ok(())
 }
