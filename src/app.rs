@@ -1,6 +1,28 @@
 use crate::logger;
 use std::fs;
 
+pub struct App {
+    pub should_quit: bool,
+    pub state: PatraFileState,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self {
+            should_quit: false,
+            state: PatraFileState::new(String::from(
+                std::env::current_dir().unwrap().to_str().unwrap(),
+            )),
+        }
+    }
+}
+
+impl App {
+    pub fn quit(&mut self) {
+        self.should_quit = true;
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum PatraFileItemType {
     File,

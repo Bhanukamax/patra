@@ -12,7 +12,7 @@ use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
-use app::PatraFileState;
+use app::App;
 
 fn main() {
     logger::info("Starting app");
@@ -22,36 +22,34 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
+    let mut app = App::default();
     let mut display = Display::new();
     let _stdout = stdout().into_raw_mode();
     display.hide_cursor()?;
 
-    let mut file_list_st = PatraFileState::new(String::from(
-        std::env::current_dir().unwrap().to_str().unwrap(),
-    ));
-
-    file_list_st
+    app.state
         .list_dir()
         .expect("Something went wrong, check if you have permission to read the directory");
 
-    display.render(&file_list_st)?;
-    display.flush()?;
+    display.render(&app.state)?;
     let stdin = stdin();
     for c in stdin.events() {
         if let Event::Key(Key::Char(key)) = c.as_ref().unwrap() {
             match &key {
-                'q' => break,
-                'j' => file_list_st.next(),
-                'k' => file_list_st.prev(),
-                '-' | 'h' => file_list_st.up_dir()?,
-                '\n' | 'l' => file_list_st.enter()?,
+                'q' => app.quit(),
+                'j' => app.state.next(),
+                'k' => app.state.prev(),
+                '-' | 'h' => app.state.up_dir()?,
+                '\n' | 'l' => app.state.enter()?,
                 _ => {}
             }
         }
 
-        display.render(&file_list_st)?;
+        if app.should_quit {
+            break;
+        }
 
-        display.flush()?;
+        display.render(&app.state)?;
     }
     display.show_cursor()?;
     Ok(())
