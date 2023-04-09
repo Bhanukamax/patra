@@ -1,24 +1,53 @@
 use crate::app::{PatraFileItemType, PatraFileListItem, PatraFileState};
+use crate::logger::debug;
 use std::io::{stdout, Write};
 use termion::screen::IntoAlternateScreen;
 use termion::{self, color, screen::AlternateScreen, style};
 
+#[derive(Default)]
+pub struct Size {
+    _w: u16,
+    h: u16,
+}
+
+#[derive(Default)]
+pub struct Position {
+    _x: u16,
+    y: u16,
+}
+
+#[derive(Default)]
+pub struct ListWidget {
+    pub size: Size,
+    pub screen_pos: Position,
+    pub start_idx: u16,
+}
+
 pub struct Display {
     pub screen: AlternateScreen<std::io::Stdout>,
+    pub list_widget: ListWidget,
 }
 
 impl Display {
     pub fn new() -> Self {
+        let mut list_widget = ListWidget::default();
+        list_widget.size.h = 10_u16;
+        list_widget.screen_pos.y = 1_u16;
+        list_widget.start_idx = 0;
+
         Self {
             screen: stdout().into_alternate_screen().unwrap(),
+            list_widget,
         }
     }
     pub fn flush(&mut self) -> Result<(), std::io::Error> {
         self.screen.flush()
     }
     pub fn render(&mut self, state: &PatraFileState) -> Result<(), std::io::Error> {
+        let scroll_pos: u16 = state.c_idx.clone().saturating_sub(self.list_widget.size.h.clone());
+        debug(&format!("scroll_pos: {}", scroll_pos));
         self.render_path(state)?;
-        self.render_app(&state.list.clone(), state.c_idx)?;
+        self.render_app(&state.list.clone(), state.c_idx, scroll_pos)?;
         Ok(())
     }
     pub fn hide_cursor(&mut self) -> Result<(), std::io::Error> {
@@ -30,23 +59,36 @@ impl Display {
 
     pub fn render_app(
         &mut self,
-        file_list: &[PatraFileListItem],
+        state: &[PatraFileListItem],
         c_idx: u16,
+        scroll_pos: u16,
     ) -> Result<(), std::io::Error> {
-        file_list.iter().enumerate().for_each(|(idx, item)| {
-            self.render_item(item, idx as u16 + 1, c_idx == idx as u16 + 1)
+        let filter_start: usize = (0 + scroll_pos).into();
+        let filter_end: usize = *&self.list_widget.size.h as usize + scroll_pos as usize;
+        let screen_start: u16 = self.list_widget.screen_pos.y;
+        debug(&format!("filter_start: {}, filter_end: {}, screen_start: {}", filter_start, filter_end, screen_start));
+        state
+            .iter()
+            .enumerate()
+            .filter(|(idx, _)| idx >= &filter_start && idx < &filter_end)
+            .for_each(|(idx, item)| {
+                self.render_item(
+                    item,
+                    idx as u16 + screen_start as u16 - scroll_pos,
+                    c_idx == idx as u16 + 1,
+                )
                 .unwrap()
-        });
+            });
         Ok(())
     }
 
-    pub fn render_path(&mut self, file_list: &PatraFileState) -> Result<(), std::io::Error> {
+    pub fn render_path(&mut self, state: &PatraFileState) -> Result<(), std::io::Error> {
         self.set_style_path();
         write!(&mut self.screen, "{}", termion::clear::All)?;
         self.move_cursor_cursor(10, 1);
         write!(&mut self.screen, "                   ")?;
         self.move_cursor_cursor(10, 1);
-        write!(&mut self.screen, "{} ", &file_list.path)?;
+        write!(&mut self.screen, "[{}] {} ", &state.c_idx, &state.path)?;
         Ok(())
     }
 
