@@ -1,4 +1,3 @@
-// use super::display::move_cursor_cursor;
 use crate::logger;
 use std::fs;
 
@@ -87,7 +86,6 @@ impl PatraFileState {
             })
             .iter();
         logger::debug(&format!("new path: {:?}", &self.path));
-        // logger::log!("new path: {:?}", &self.path)?;
 
         Ok(())
     }
