@@ -1,5 +1,4 @@
 use crate::app::{PatraFileItemType, PatraFileListItem, PatraFileState};
-use crate::logger::debug;
 use std::io::{stdout, Write};
 use termion::screen::IntoAlternateScreen;
 use termion::{self, color, screen::AlternateScreen, style};
@@ -44,8 +43,7 @@ impl Display {
         self.screen.flush()
     }
     pub fn render(&mut self, state: &PatraFileState) -> Result<(), std::io::Error> {
-        let scroll_pos: u16 = state.c_idx.clone().saturating_sub(self.list_widget.size.h.clone());
-        debug(&format!("scroll_pos: {}", scroll_pos));
+        let scroll_pos: u16 = state.c_idx.saturating_sub(self.list_widget.size.h);
         self.render_path(state)?;
         self.render_app(&state.list.clone(), state.c_idx, scroll_pos)?;
         Ok(())
@@ -59,22 +57,21 @@ impl Display {
 
     pub fn render_app(
         &mut self,
-        state: &[PatraFileListItem],
+        state_list: &[PatraFileListItem],
         c_idx: u16,
         scroll_pos: u16,
     ) -> Result<(), std::io::Error> {
-        let filter_start: usize = (0 + scroll_pos).into();
-        let filter_end: usize = *&self.list_widget.size.h as usize + scroll_pos as usize;
+        let filter_start: usize = scroll_pos.into();
+        let filter_end: usize = self.list_widget.size.h as usize + scroll_pos as usize;
         let screen_start: u16 = self.list_widget.screen_pos.y;
-        debug(&format!("filter_start: {}, filter_end: {}, screen_start: {}", filter_start, filter_end, screen_start));
-        state
+        state_list
             .iter()
             .enumerate()
             .filter(|(idx, _)| idx >= &filter_start && idx < &filter_end)
             .for_each(|(idx, item)| {
                 self.render_item(
                     item,
-                    idx as u16 + screen_start as u16 - scroll_pos,
+                    idx as u16 + screen_start - scroll_pos,
                     c_idx == idx as u16 + 1,
                 )
                 .unwrap()
@@ -86,8 +83,7 @@ impl Display {
         self.set_style_path();
         write!(&mut self.screen, "{}", termion::clear::All)?;
         self.move_cursor_cursor(10, 1);
-        write!(&mut self.screen, "                   ")?;
-        self.move_cursor_cursor(10, 1);
+        write!(&mut self.screen, "{}", termion::clear::CurrentLine)?;
         write!(&mut self.screen, "[{}] {} ", &state.c_idx, &state.path)?;
         Ok(())
     }
