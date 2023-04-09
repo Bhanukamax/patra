@@ -1,15 +1,22 @@
 use crate::logger;
 use std::fs;
 
+#[derive(Default)]
+pub struct Flags {
+    _write_to_file: bool,
+}
+
 pub struct App {
     pub should_quit: bool,
     pub state: PatraFileState,
+    _flags: Flags,
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
             should_quit: false,
+            _flags: Flags::default(),
             state: PatraFileState::new(String::from(
                 std::env::current_dir().unwrap().to_str().unwrap(),
             )),
