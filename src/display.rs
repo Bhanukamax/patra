@@ -1,4 +1,4 @@
-use super::app::{PatraFileItemType, PatraFileListItem, PatraFileState};
+use crate::app::{PatraFileItemType, PatraFileListItem, PatraFileState};
 use std::io::Write;
 use termion::{self, color, screen::AlternateScreen, style};
 

@@ -2,15 +2,17 @@
 // #![allow(unused_imports)]
 extern crate termion;
 
+mod logger;
+mod app;
+mod display;
+
 use std::io::{stdin, stdout, Write};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::screen::IntoAlternateScreen;
-mod patra;
-use patra::app::PatraFileState;
-use patra::display;
-use patra::logger;
+
+use app::PatraFileState;
 
 fn main() {
     // let mut screen = stdout().into_alternate_screen().unwrap();

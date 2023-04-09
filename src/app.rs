@@ -1,5 +1,5 @@
 // use super::display::move_cursor_cursor;
-use super::logger;
+use crate::logger;
 use std::fs;
 use std::io::Stdout;
 use termion::screen::AlternateScreen;
