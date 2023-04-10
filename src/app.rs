@@ -1,6 +1,36 @@
 use crate::logger;
 use std::{fs, io::Write};
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum PatraFileItemType {
+    File,
+    Dir,
+    Sym,
+    Unknown,
+}
+
+#[derive(Clone, Debug)]
+pub struct PatraFileListItem {
+    pub name: String,
+    pub file_type: PatraFileItemType,
+}
+
+#[derive(std::clone::Clone, Debug)]
+pub struct PatraFileState {
+    pub list: Vec<PatraFileListItem>,
+    pub path: String,
+    pub c_idx: u16,
+}
+
+impl PatraFileState {
+    pub fn new(path: String) -> PatraFileState {
+        PatraFileState {
+            path,
+            list: vec![],
+            c_idx: 1,
+        }
+    }
+}
 #[derive(Default)]
 pub struct Flags {
     write_to_file: bool,
@@ -11,6 +41,7 @@ pub struct App {
     pub state: PatraFileState,
     pub flags: Flags,
     pub selection_file_path: String,
+    pub exit_code: i32,
 }
 
 impl Default for App {
@@ -18,6 +49,7 @@ impl Default for App {
         Self {
             selection_file_path: "".into(),
             should_quit: false,
+            exit_code: 0,
             flags: Flags::default(),
             state: PatraFileState::new(String::from(
                 std::env::current_dir().unwrap().to_str().unwrap(),
@@ -32,8 +64,21 @@ impl App {
         self.selection_file_path = file_path;
     }
 
-    pub fn quit(&mut self) {
+    pub fn update_path(&mut self, path: String) {
+        self.state.path = if path == "." {
+            self.state.path.clone()
+        } else if path.starts_with("./") {
+            self.state.path.clone() + path.trim_start_matches('.')
+        } else if path.starts_with('/') {
+            path
+        } else {
+            self.state.path.clone()
+        }
+    }
+
+    pub fn quit(&mut self, exit_code: Option<i32>) {
         self.should_quit = true;
+        self.exit_code = exit_code.unwrap_or(0);
     }
 
     pub fn list_dir(&mut self) -> std::io::Result<()> {
@@ -76,7 +121,7 @@ impl App {
                 .expect("Could not output file to write the selection path");
             write!(file, "{}/{}", &original_path, current_file.name)
                 .expect("Could not write to file");
-            self.quit()
+            self.quit(Some(2))
         }
 
         logger::debug(&format!("New path: {:?}", new_path));
@@ -120,37 +165,6 @@ impl App {
             self.state.list.len() as u16
         } else {
             self.state.c_idx - 1
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum PatraFileItemType {
-    File,
-    Dir,
-    Sym,
-    Unknown,
-}
-
-#[derive(Clone, Debug)]
-pub struct PatraFileListItem {
-    pub name: String,
-    pub file_type: PatraFileItemType,
-}
-
-#[derive(std::clone::Clone, Debug)]
-pub struct PatraFileState {
-    pub list: Vec<PatraFileListItem>,
-    pub path: String,
-    pub c_idx: u16,
-}
-
-impl PatraFileState {
-    pub fn new(path: String) -> PatraFileState {
-        PatraFileState {
-            path,
-            list: vec![],
-            c_idx: 1,
         }
     }
 }

@@ -31,6 +31,9 @@ impl Display {
     pub fn new() -> Self {
         let mut list_widget = ListWidget::default();
         list_widget.size.h = 10_u16;
+        if let Ok((_, rows)) = termion::terminal_size() {
+            list_widget.size.h = rows - 5
+        }
         list_widget.screen_pos.y = 1_u16;
         list_widget.start_idx = 0;
 
@@ -114,14 +117,17 @@ impl Display {
         self.move_cursor_cursor(1, idx + 2);
         write!(&mut self.screen, "{}", style::Bold)?;
         write!(&mut self.screen, "{}", icon)?;
-        write!(&mut self.screen, "{}", style::NoBold)?;
+        // write!(&mut self.screen, "{}", style::NoBold)?;
+        write!(&mut self.screen, "{}", style::NoFaint)?;
         write!(&mut self.screen, " {}{}", item.name, suffix)?;
         self.set_style_unfocus();
+        // write!(&mut self.screen, "{}", SteadyUnderline)?;
 
         Ok(())
     }
 
     pub fn set_style_dir(&mut self) {
+        write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
         write!(&mut self.screen, "{}", color::Fg(color::LightBlue)).unwrap();
         write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
     }
@@ -135,7 +141,7 @@ impl Display {
         write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
     }
     pub fn set_style_unfocus(&mut self) {
-        write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
+        // write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
         write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
     }
     pub fn set_style_focus(&mut self) {
