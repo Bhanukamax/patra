@@ -35,9 +35,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     logger::debug(&format!("Args selection_path: {:?}", args.selection_path));
     logger::debug(&format!("Args starting_path: {:?}", args.starting_path));
     let mut app = App::default();
+
     if let Some(path) = args.selection_path {
         app.set_should_write_to_file(path);
     }
+    logger::debug(&format!("default starting_path: {:?}", app.state.path));
+    if let Some(path) = args.starting_path {
+        app.update_path(path);
+        logger::debug(&format!("new starting_path: {:?}", app.state.path));
+    }
+
     let mut display = Display::new();
     let _stdout = stdout().into_raw_mode();
     display.hide_cursor()?;
@@ -50,7 +57,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     for c in stdin.events() {
         if let Event::Key(Key::Char(key)) = c.as_ref().unwrap() {
             match &key {
-                'q' => app.quit(),
+                'q' => app.quit(Some(0)),
                 'j' => app.next(),
                 'k' => app.prev(),
                 '-' | 'h' => app.up_dir()?,
@@ -66,5 +73,5 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         display.render(&app.state)?;
     }
     display.show_cursor()?;
-    Ok(())
+    std::process::exit(app.exit_code);
 }
