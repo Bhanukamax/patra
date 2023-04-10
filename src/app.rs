@@ -36,6 +36,28 @@ impl App {
         self.should_quit = true;
     }
 
+    pub fn list_dir(&mut self) -> std::io::Result<()> {
+        let dir_list = fs::read_dir(&self.state.path)?;
+        self.state.list = dir_list
+            .into_iter()
+            .map(|x| PatraFileListItem {
+                name: String::from(x.as_ref().unwrap().file_name().to_str().unwrap()),
+                file_type: if x.as_ref().unwrap().path().is_dir() {
+                    PatraFileItemType::Dir
+                } else if x.as_ref().unwrap().path().is_file() {
+                    PatraFileItemType::File
+                } else if x.unwrap().path().is_symlink() {
+                    PatraFileItemType::Sym
+                } else {
+                    PatraFileItemType::Unknown
+                },
+            })
+            .collect();
+        self.state.c_idx = 1;
+
+        Ok(())
+    }
+
     pub fn enter(&mut self) -> Result<(), std::io::Error> {
         let idx: usize = self.state.c_idx as usize - 1;
         let original_path = String::from(&self.state.path);
@@ -60,8 +82,7 @@ impl App {
         logger::debug(&format!("New path: {:?}", new_path));
         self.state.path = new_path;
 
-        self.state
-            .list_dir()
+        self.list_dir()
             .map_err(|e| -> Result<(), std::io::Error> {
                 self.state.path = original_path;
                 self.state.c_idx = old_idx;
@@ -72,6 +93,34 @@ impl App {
         logger::debug(&format!("new path: {:?}", &self.state.path));
 
         Ok(())
+    }
+
+    pub fn up_dir(&mut self) -> Result<(), std::io::Error> {
+        if &self.state.path != "/" {
+            self.state.path = std::path::Path::new(&self.state.path)
+                .parent()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string();
+            self.list_dir()?;
+        }
+        Ok(())
+    }
+    pub fn next(&mut self) {
+        self.state.c_idx = if self.state.c_idx == self.state.list.len() as u16 {
+            1
+        } else {
+            self.state.c_idx + 1
+        };
+    }
+
+    pub fn prev(&mut self) {
+        self.state.c_idx = if self.state.c_idx == 1 {
+            self.state.list.len() as u16
+        } else {
+            self.state.c_idx - 1
+        }
     }
 }
 
@@ -102,57 +151,6 @@ impl PatraFileState {
             path,
             list: vec![],
             c_idx: 1,
-        }
-    }
-
-    pub fn list_dir(&mut self) -> std::io::Result<()> {
-        let dir_list = fs::read_dir(&self.path)?;
-        self.list = dir_list
-            .into_iter()
-            .map(|x| PatraFileListItem {
-                name: String::from(x.as_ref().unwrap().file_name().to_str().unwrap()),
-                file_type: if x.as_ref().unwrap().path().is_dir() {
-                    PatraFileItemType::Dir
-                } else if x.as_ref().unwrap().path().is_file() {
-                    PatraFileItemType::File
-                } else if x.unwrap().path().is_symlink() {
-                    PatraFileItemType::Sym
-                } else {
-                    PatraFileItemType::Unknown
-                },
-            })
-            .collect();
-        self.c_idx = 1;
-
-        Ok(())
-    }
-
-    pub fn up_dir(&mut self) -> Result<(), std::io::Error> {
-        if &self.path != "/" {
-            self.path = std::path::Path::new(&self.path)
-                .parent()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_string();
-            self.list_dir()?;
-        }
-        Ok(())
-    }
-
-    pub fn next(&mut self) {
-        self.c_idx = if self.c_idx == self.list.len() as u16 {
-            1
-        } else {
-            self.c_idx + 1
-        };
-    }
-
-    pub fn prev(&mut self) {
-        self.c_idx = if self.c_idx == 1 {
-            self.list.len() as u16
-        } else {
-            self.c_idx - 1
         }
     }
 }
