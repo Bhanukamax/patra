@@ -19,6 +19,8 @@ use app::App;
 struct Args {
     #[arg(short, long)]
     selection_path: Option<String>,
+    #[clap(index(1))]
+    starting_path: Option<String>,
 }
 
 fn main() {
@@ -30,7 +32,8 @@ fn main() {
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
-    logger::debug(&format!("Args: {:?}", args.selection_path));
+    logger::debug(&format!("Args selection_path: {:?}", args.selection_path));
+    logger::debug(&format!("Args starting_path: {:?}", args.starting_path));
     let mut app = App::default();
     if let Some(path) = args.selection_path {
         app.set_should_write_to_file(path);
@@ -39,8 +42,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let _stdout = stdout().into_raw_mode();
     display.hide_cursor()?;
 
-    app.state
-        .list_dir()
+    app.list_dir()
         .expect("Something went wrong, check if you have permission to read the directory");
 
     display.render(&app.state)?;
@@ -49,9 +51,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         if let Event::Key(Key::Char(key)) = c.as_ref().unwrap() {
             match &key {
                 'q' => app.quit(),
-                'j' => app.state.next(),
-                'k' => app.state.prev(),
-                '-' | 'h' => app.state.up_dir()?,
+                'j' => app.next(),
+                'k' => app.prev(),
+                '-' | 'h' => app.up_dir()?,
                 '\n' | 'l' => app.enter()?,
                 _ => {}
             }
