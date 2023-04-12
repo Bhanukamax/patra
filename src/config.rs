@@ -20,7 +20,6 @@ impl Config {
             r#"
     [theme]
     file_fg = '#ff0088'
-    file_bg = '#1f1f1f'
     file_focus_fg = '#fafafa'
 "#,
         )

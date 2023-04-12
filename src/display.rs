@@ -24,6 +24,7 @@ fn hex_to_rgb(hex: Option<String>) -> Option<(u8, u8, u8)> {
     }
     None
 }
+
 pub fn color_from_string(value: Option<String>) -> Option<Color> {
     if let Some((r, g, b)) = hex_to_rgb(value) {
         return Some(Box::new(color::Rgb(r, g, b)));
@@ -34,14 +35,18 @@ pub fn color_from_string(value: Option<String>) -> Option<Color> {
 impl Theme {
     pub fn new(config_theme: crate::config::Theme) -> Self {
         let value = 50;
-        // let focus_bg = color::Rgb(value, value, value);
+
         let focus_bg = color::Rgb(10, value, 100);
         let file_fg = color_from_string(config_theme.file_fg).unwrap_or(Box::new(color::White));
+        let file_bg = color_from_string(config_theme.file_bg).unwrap_or(Box::new(color::Reset));
+        let file_focus_fg = color_from_string(config_theme.file_focus_fg).unwrap_or(Box::new(color::White));
+        let file_focus_bg = color_from_string(config_theme.file_focus_bg).unwrap_or(Box::new(focus_bg));
+
         Self {
             file_fg,
-            file_bg: Box::new(color::Reset),
-            file_focus_fg: Box::new(color::White),
-            file_focus_bg: Box::new(focus_bg),
+            file_bg,
+            file_focus_fg,
+            file_focus_bg,
         }
     }
 }
