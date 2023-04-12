@@ -5,6 +5,7 @@ extern crate termion;
 mod app;
 mod display;
 mod logger;
+mod config;
 
 use clap::Parser;
 use display::Display;

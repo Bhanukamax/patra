@@ -1,4 +1,5 @@
 use crate::app::{PatraFileItemType, PatraFileListItem, PatraFileState};
+use crate::config::Theme;
 use std::io::{stdout, Write};
 use termion::screen::IntoAlternateScreen;
 use termion::{self, color, screen::AlternateScreen, style};
@@ -25,6 +26,7 @@ pub struct ListWidget {
 pub struct Display {
     pub screen: AlternateScreen<std::io::Stdout>,
     pub list_widget: ListWidget,
+    pub theme: Theme,
 }
 
 impl Display {
@@ -38,6 +40,7 @@ impl Display {
         list_widget.start_idx = 0;
 
         Self {
+            theme: Theme::new(),
             screen: stdout().into_alternate_screen().unwrap(),
             list_widget,
         }
@@ -129,7 +132,7 @@ impl Display {
     pub fn set_style_dir(&mut self) {
         write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
         write!(&mut self.screen, "{}", color::Fg(color::LightBlue)).unwrap();
-        write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
+        write!(&mut self.screen, "{}", color::Bg(self.theme.file_bg.as_ref())).unwrap();
     }
 
     pub fn set_style_path(&mut self) {
@@ -138,20 +141,16 @@ impl Display {
 
     pub fn set_style_file(&mut self) {
         write!(&mut self.screen, "{}", color::Fg(color::White)).unwrap();
-        write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
+        // write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
+        write!(&mut self.screen, "{}", color::Bg(self.theme.file_bg.as_ref())).unwrap();
     }
     pub fn set_style_unfocus(&mut self) {
         // write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
-        write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
+        // write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
+        write!(&mut self.screen, "{}", color::Bg(self.theme.file_bg.as_ref())).unwrap();
     }
     pub fn set_style_focus(&mut self) {
-        let value = 50;
-        write!(
-            &mut self.screen,
-            "{}",
-            color::Bg(color::Rgb(value, value, value))
-        )
-        .unwrap();
+        write!(&mut self.screen, "{}", color::Bg(self.theme.file_focus_bg.as_ref())).unwrap();
     }
 
     pub fn move_cursor_cursor(&mut self, x: u16, y: u16) {
