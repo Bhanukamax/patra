@@ -19,7 +19,7 @@ impl Config {
         let config: Config = toml::from_str(
             r#"
     [theme]
-    file_fg = '#ff0000'
+    file_fg = '#ff0088'
     file_bg = '#1f1f1f'
     file_focus_fg = '#fafafa'
 "#,

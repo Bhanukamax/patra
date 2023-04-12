@@ -1,5 +1,4 @@
 use crate::app::{PatraFileItemType, PatraFileListItem, PatraFileState};
-use colors_transform::Rgb;
 use std::io::{stdout, Write};
 use termion::screen::IntoAlternateScreen;
 use termion::{self, color, screen::AlternateScreen, style};
@@ -16,16 +15,18 @@ pub struct Theme {
 fn hex_to_rgb(hex: Option<String>) -> Option<(u8, u8, u8)> {
     if let Some(hex) = hex {
         let hex = hex.trim_start_matches('#');
-        let r = u8::from_str_radix(&hex[0..2], 16).unwrap();
-        let g = u8::from_str_radix(&hex[2..4], 16).unwrap();
-        let b = u8::from_str_radix(&hex[4..6], 16).unwrap();
-        return Some((r, g, b));
+        let r = u8::from_str_radix(&hex[0..2], 16);
+        let g = u8::from_str_radix(&hex[2..4], 16);
+        let b = u8::from_str_radix(&hex[4..6], 16);
+        if let (Ok(r), Ok(g), Ok(b)) = (r, g, b) {
+            return Some((r, g, b));
+        }
     }
     None
 }
 pub fn color_from_string(value: Option<String>) -> Option<Color> {
     if let Some((r, g, b)) = hex_to_rgb(value) {
-       return Some(Box::new(color::Rgb(r, g, b)))
+        return Some(Box::new(color::Rgb(r, g, b)));
     }
     None
 }
@@ -186,7 +187,12 @@ impl Display {
     }
 
     pub fn set_style_file(&mut self) {
-        write!(&mut self.screen, "{}", color::Fg(self.theme.file_fg.as_ref())).unwrap();
+        write!(
+            &mut self.screen,
+            "{}",
+            color::Fg(self.theme.file_fg.as_ref())
+        )
+        .unwrap();
         // write!(&mut self.screen, "{}", color::Fg(color::White)).unwrap();
         // write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
         write!(
