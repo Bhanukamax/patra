@@ -3,35 +3,49 @@
 extern crate termion;
 
 mod app;
+mod config;
 mod display;
 mod logger;
-mod config;
 
 use clap::Parser;
+use config::Config;
 use display::Display;
 use std::io::{stdin, stdout};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
+use serde::Deserialize;
+
 use app::App;
 
-#[derive(Parser)]
+#[derive(Deserialize, Debug, Parser)]
 struct Args {
     #[arg(short, long)]
     selection_path: Option<String>,
     #[clap(index(1))]
     starting_path: Option<String>,
 }
+type DebugMode = bool;
 
 fn main() {
+    let debug_mode: DebugMode = match std::env::var("DEBUG") {
+        Ok(val) => matches!(val.as_str(), "1"),
+        Err(_) => false,
+    };
+
     logger::info("Starting app");
-    if let Err(e) = run() {
-        logger::error(&format!("Error: {}", e));
+    let config = Config::load().unwrap_or(Config::default());
+
+    dbg!(config.clone());
+    if !debug_mode {
+        if let Err(e) = run(config) {
+            logger::error(&format!("Error: {}", e));
+        }
     }
 }
 
-fn run() -> Result<(), Box<dyn std::error::Error>> {
+fn run(config: Config) -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     logger::debug(&format!("Args selection_path: {:?}", args.selection_path));
     logger::debug(&format!("Args starting_path: {:?}", args.starting_path));
@@ -46,7 +60,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         logger::debug(&format!("new starting_path: {:?}", app.state.path));
     }
 
-    let mut display = Display::new();
+    let mut display = Display::new(config.theme);
     let _stdout = stdout().into_raw_mode();
     display.hide_cursor()?;
 

@@ -1,8 +1,49 @@
 use crate::app::{PatraFileItemType, PatraFileListItem, PatraFileState};
-use crate::config::Theme;
+use colors_transform::Rgb;
 use std::io::{stdout, Write};
 use termion::screen::IntoAlternateScreen;
 use termion::{self, color, screen::AlternateScreen, style};
+
+type Color = Box<dyn color::Color>;
+
+pub struct Theme {
+    pub file_fg: Color,
+    pub file_bg: Color,
+    pub file_focus_fg: Color,
+    pub file_focus_bg: Color,
+}
+
+fn hex_to_rgb(hex: Option<String>) -> Option<(u8, u8, u8)> {
+    if let Some(hex) = hex {
+        let hex = hex.trim_start_matches('#');
+        let r = u8::from_str_radix(&hex[0..2], 16).unwrap();
+        let g = u8::from_str_radix(&hex[2..4], 16).unwrap();
+        let b = u8::from_str_radix(&hex[4..6], 16).unwrap();
+        return Some((r, g, b));
+    }
+    None
+}
+pub fn color_from_string(value: Option<String>) -> Option<Color> {
+    if let Some((r, g, b)) = hex_to_rgb(value) {
+       return Some(Box::new(color::Rgb(r, g, b)))
+    }
+    None
+}
+
+impl Theme {
+    pub fn new(config_theme: crate::config::Theme) -> Self {
+        let value = 50;
+        // let focus_bg = color::Rgb(value, value, value);
+        let focus_bg = color::Rgb(10, value, 100);
+        let file_fg = color_from_string(config_theme.file_fg).unwrap_or(Box::new(color::White));
+        Self {
+            file_fg,
+            file_bg: Box::new(color::Reset),
+            file_focus_fg: Box::new(color::White),
+            file_focus_bg: Box::new(focus_bg),
+        }
+    }
+}
 
 #[derive(Default)]
 pub struct Size {
@@ -30,7 +71,7 @@ pub struct Display {
 }
 
 impl Display {
-    pub fn new() -> Self {
+    pub fn new(config_theme: crate::config::Theme) -> Self {
         let mut list_widget = ListWidget::default();
         list_widget.size.h = 10_u16;
         if let Ok((_, rows)) = termion::terminal_size() {
@@ -40,7 +81,7 @@ impl Display {
         list_widget.start_idx = 0;
 
         Self {
-            theme: Theme::new(),
+            theme: Theme::new(config_theme),
             screen: stdout().into_alternate_screen().unwrap(),
             list_widget,
         }
@@ -132,7 +173,12 @@ impl Display {
     pub fn set_style_dir(&mut self) {
         write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
         write!(&mut self.screen, "{}", color::Fg(color::LightBlue)).unwrap();
-        write!(&mut self.screen, "{}", color::Bg(self.theme.file_bg.as_ref())).unwrap();
+        write!(
+            &mut self.screen,
+            "{}",
+            color::Bg(self.theme.file_bg.as_ref())
+        )
+        .unwrap();
     }
 
     pub fn set_style_path(&mut self) {
@@ -140,17 +186,33 @@ impl Display {
     }
 
     pub fn set_style_file(&mut self) {
-        write!(&mut self.screen, "{}", color::Fg(color::White)).unwrap();
+        write!(&mut self.screen, "{}", color::Fg(self.theme.file_fg.as_ref())).unwrap();
+        // write!(&mut self.screen, "{}", color::Fg(color::White)).unwrap();
         // write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
-        write!(&mut self.screen, "{}", color::Bg(self.theme.file_bg.as_ref())).unwrap();
+        write!(
+            &mut self.screen,
+            "{}",
+            color::Bg(self.theme.file_bg.as_ref())
+        )
+        .unwrap();
     }
     pub fn set_style_unfocus(&mut self) {
         // write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
         // write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
-        write!(&mut self.screen, "{}", color::Bg(self.theme.file_bg.as_ref())).unwrap();
+        write!(
+            &mut self.screen,
+            "{}",
+            color::Bg(self.theme.file_bg.as_ref())
+        )
+        .unwrap();
     }
     pub fn set_style_focus(&mut self) {
-        write!(&mut self.screen, "{}", color::Bg(self.theme.file_focus_bg.as_ref())).unwrap();
+        write!(
+            &mut self.screen,
+            "{}",
+            color::Bg(self.theme.file_focus_bg.as_ref())
+        )
+        .unwrap();
     }
 
     pub fn move_cursor_cursor(&mut self, x: u16, y: u16) {

@@ -1,37 +1,30 @@
 #![allow(dead_code)]
-use termion::color;
+use serde::Deserialize;
 
-type Color = Box<dyn color::Color>;
-
+#[derive(Deserialize, Debug, Default, Clone)]
 pub struct Theme {
-    pub file_fg: Color,
-    pub file_bg: Color,
-    pub file_focus_fg: Color,
-    pub file_focus_bg: Color,
+    pub file_fg: Option<String>,
+    pub file_bg: Option<String>,
+    pub file_focus_fg: Option<String>,
+    pub file_focus_bg: Option<String>,
 }
 
+#[derive(Deserialize, Debug, Default, Clone)]
 pub struct Config {
     pub theme: Theme,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            theme: Theme::new(),
-        }
-    }
-}
-
-impl Theme {
-    pub fn new() -> Self {
-        let value = 50;
-        // let focus_bg = color::Rgb(value, value, value);
-        let focus_bg = color::Rgb(10, value, 100);
-        Self {
-            file_fg: Box::new(color::White),
-            file_bg: Box::new(color::Reset),
-            file_focus_fg: Box::new(color::White),
-            file_focus_bg: Box::new(focus_bg),
-        }
+impl Config {
+    pub fn load() -> Result<Self, Box<dyn std::error::Error>> {
+        let config: Config = toml::from_str(
+            r#"
+    [theme]
+    file_fg = '#ff0000'
+    file_bg = '#1f1f1f'
+    file_focus_fg = '#fafafa'
+"#,
+        )
+        .unwrap_or(Config::default());
+        Ok(config)
     }
 }
