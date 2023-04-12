@@ -12,7 +12,7 @@ pub struct Theme {
     pub file_focus_bg: Color,
 }
 
-fn hex_to_rgb(hex: Option<String>) -> Option<(u8, u8, u8)> {
+fn hex_to_rgb(hex: &Option<String>) -> Option<(u8, u8, u8)> {
     if let Some(hex) = hex {
         let hex = hex.trim_start_matches('#');
         let r = u8::from_str_radix(&hex[0..2], 16);
@@ -25,7 +25,7 @@ fn hex_to_rgb(hex: Option<String>) -> Option<(u8, u8, u8)> {
     None
 }
 
-pub fn color_from_string(value: Option<String>) -> Option<Color> {
+pub fn color_from_string(value: &Option<String>) -> Option<Color> {
     if let Some((r, g, b)) = hex_to_rgb(value) {
         return Some(Box::new(color::Rgb(r, g, b)));
     }
@@ -33,14 +33,14 @@ pub fn color_from_string(value: Option<String>) -> Option<Color> {
 }
 
 impl Theme {
-    pub fn new(config_theme: crate::config::Theme) -> Self {
+    pub fn new(config_theme: &crate::config::Theme) -> Self {
         let value = 50;
 
         let focus_bg = color::Rgb(10, value, 100);
-        let file_fg = color_from_string(config_theme.file_fg).unwrap_or(Box::new(color::White));
-        let file_bg = color_from_string(config_theme.file_bg).unwrap_or(Box::new(color::Reset));
-        let file_focus_fg = color_from_string(config_theme.file_focus_fg).unwrap_or(Box::new(color::White));
-        let file_focus_bg = color_from_string(config_theme.file_focus_bg).unwrap_or(Box::new(focus_bg));
+        let file_fg = color_from_string(&config_theme.file_fg).unwrap_or(Box::new(color::White));
+        let file_bg = color_from_string(&config_theme.file_bg).unwrap_or(Box::new(color::Reset));
+        let file_focus_fg = color_from_string(&config_theme.file_focus_fg).unwrap_or(Box::new(color::White));
+        let file_focus_bg = color_from_string(&config_theme.file_focus_bg).unwrap_or(Box::new(focus_bg));
 
         Self {
             file_fg,
@@ -77,7 +77,7 @@ pub struct Display {
 }
 
 impl Display {
-    pub fn new(config_theme: crate::config::Theme) -> Self {
+    pub fn new(config_theme: &crate::config::Theme) -> Self {
         let mut list_widget = ListWidget::default();
         list_widget.size.h = 10_u16;
         if let Ok((_, rows)) = termion::terminal_size() {
@@ -87,7 +87,7 @@ impl Display {
         list_widget.start_idx = 0;
 
         Self {
-            theme: Theme::new(config_theme),
+            theme: Theme::new(&config_theme),
             screen: stdout().into_alternate_screen().unwrap(),
             list_widget,
         }

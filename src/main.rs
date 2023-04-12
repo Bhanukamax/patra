@@ -23,6 +23,8 @@ use app::App;
 struct Args {
     #[arg(short, long)]
     selection_path: Option<String>,
+    #[arg(short, long)]
+    theme_file_focus_bg: Option<String>,
     #[clap(index(1))]
     starting_path: Option<String>,
 }
@@ -35,20 +37,29 @@ fn main() {
     };
 
     logger::info("Starting app");
-    let config = Config::load().unwrap_or(Config::default());
+    let mut config = Config::load().unwrap_or(Config::default());
 
     dbg!(config.clone());
     if !debug_mode {
-        if let Err(e) = run(config) {
+        if let Err(e) = run(&mut config) {
             logger::error(&format!("Error: {}", e));
         }
     }
 }
 
-fn run(config: Config) -> Result<(), Box<dyn std::error::Error>> {
+fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     logger::debug(&format!("Args selection_path: {:?}", args.selection_path));
     logger::debug(&format!("Args starting_path: {:?}", args.starting_path));
+    logger::debug(&format!(
+        "Args theme_file_focus_fg: {:?}",
+        args.theme_file_focus_bg
+    ));
+    let mut override_theme = config.theme.clone();
+    if let Some(path) = args.theme_file_focus_bg {
+        override_theme.file_focus_bg = Some(path);
+    }
+    config.update_theme(override_theme);
     let mut app = App::default();
 
     if let Some(path) = args.selection_path {
@@ -60,7 +71,7 @@ fn run(config: Config) -> Result<(), Box<dyn std::error::Error>> {
         logger::debug(&format!("new starting_path: {:?}", app.state.path));
     }
 
-    let mut display = Display::new(config.theme);
+    let mut display = Display::new(&config.theme);
     let _stdout = stdout().into_raw_mode();
     display.hide_cursor()?;
 

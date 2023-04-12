@@ -19,11 +19,26 @@ impl Config {
         let config: Config = toml::from_str(
             r#"
     [theme]
-    file_fg = '#ff0088'
+    file_fg = '#ffffff'
     file_focus_fg = '#fafafa'
+    file_focus_bg = '#666666'
 "#,
         )
         .unwrap_or(Config::default());
         Ok(config)
+    }
+    pub fn update_theme(&mut self, theme: Theme) {
+        if theme.file_fg.is_some() {
+            self.theme.file_fg = theme.file_fg;
+        }
+        if theme.file_bg.is_some() {
+            self.theme.file_bg = theme.file_bg;
+        }
+        if theme.file_focus_fg.is_some() {
+            self.theme.file_focus_fg = theme.file_focus_fg;
+        }
+        if theme.file_focus_bg.is_some() {
+            self.theme.file_focus_bg = theme.file_focus_bg;
+        }
     }
 }
