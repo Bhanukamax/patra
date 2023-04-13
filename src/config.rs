@@ -1,5 +1,7 @@
 #![allow(dead_code)]
+use directories::ProjectDirs;
 use serde::Deserialize;
+use std::fs;
 
 #[derive(Deserialize, Debug, Default, Clone)]
 pub struct Theme {
@@ -16,17 +18,15 @@ pub struct Config {
 
 impl Config {
     pub fn load() -> Result<Self, Box<dyn std::error::Error>> {
-        let config: Config = toml::from_str(
-            r#"
-    [theme]
-    file_fg = '#ffffff'
-    file_focus_fg = '#fafafa'
-    file_focus_bg = '#666666'
-"#,
-        )
-        .unwrap_or(Config::default());
-        Ok(config)
+        if let Some(proj_dirs) = ProjectDirs::from("com", "bmax", "Patra") {
+            let conf = proj_dirs.config_dir().join("config.toml");
+            let conf_content: String= fs::read_to_string(&conf).unwrap_or("".to_string());
+            let config: Config = toml::from_str(&conf_content.to_owned()).unwrap_or(Config::default());
+            return Ok(config);
+        }
+        Err("No config file found".into())
     }
+
     pub fn update_theme(&mut self, theme: Theme) {
         if theme.file_fg.is_some() {
             self.theme.file_fg = theme.file_fg;
