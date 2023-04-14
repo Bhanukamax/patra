@@ -8,6 +8,7 @@ type Color = Box<dyn color::Color>;
 pub struct Theme {
     pub file_fg: Color,
     pub file_bg: Color,
+    pub dir_fg: Color,
     pub file_focus_fg: Color,
     pub file_focus_bg: Color,
 }
@@ -38,6 +39,7 @@ impl Theme {
 
         let focus_bg = color::Rgb(10, value, 100);
         let file_fg = color_from_string(&config_theme.file_fg).unwrap_or(Box::new(color::White));
+        let dir_fg = color_from_string(&config_theme.dir_fg).unwrap_or(Box::new(color::Blue));
         let file_bg = color_from_string(&config_theme.file_bg).unwrap_or(Box::new(color::Reset));
         let file_focus_fg = color_from_string(&config_theme.file_focus_fg).unwrap_or(Box::new(color::White));
         let file_focus_bg = color_from_string(&config_theme.file_focus_bg).unwrap_or(Box::new(focus_bg));
@@ -45,6 +47,7 @@ impl Theme {
         Self {
             file_fg,
             file_bg,
+            dir_fg,
             file_focus_fg,
             file_focus_bg,
         }
@@ -178,7 +181,7 @@ impl Display {
 
     pub fn set_style_dir(&mut self) {
         write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
-        write!(&mut self.screen, "{}", color::Fg(color::LightBlue)).unwrap();
+        write!(&mut self.screen, "{}", color::Fg(self.theme.dir_fg.as_ref())).unwrap();
         write!(
             &mut self.screen,
             "{}",
