@@ -24,11 +24,9 @@ struct Args {
     // last selection path
     #[arg(short, long)]
     selection_path: Option<String>,
-    // theme related
+    // config override
     #[arg(short, long)]
-    theme_file_focus_bg: Option<String>,
-    #[arg(short, long)]
-    file_fg: Option<String>,
+    config: Option<String>,
     // File path
     #[clap(index(1))]
     starting_path: Option<String>,
@@ -56,19 +54,15 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     logger::debug(&format!("Args selection_path: {:?}", args.selection_path));
     logger::debug(&format!("Args starting_path: {:?}", args.starting_path));
-    logger::debug(&format!(
-        "Args theme_file_focus_fg: {:?}",
-        args.theme_file_focus_bg
-    ));
-    let mut override_theme = config.theme.clone();
-    if let Some(path) = args.theme_file_focus_bg {
-        override_theme.file_focus_bg = Some(path);
-    }
-    if let Some(path) = args.file_fg {
-        override_theme.file_fg = Some(path);
-    }
-    config.update_theme(override_theme);
+    logger::debug(&format!("Args theme_file_focus_fg: {:?}", args.config));
+    // let mut override_theme = config.theme.clone();
+
+    // config.update_theme(override_theme);
     let mut app = App::default();
+
+    if let Some(path) = args.config {
+        config.load_from_path(path)?;
+    }
 
     if let Some(path) = args.selection_path {
         app.set_should_write_to_file(path);
