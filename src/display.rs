@@ -3,6 +3,57 @@ use std::io::{stdout, Write};
 use termion::screen::IntoAlternateScreen;
 use termion::{self, color, screen::AlternateScreen, style};
 
+type Color = Box<dyn color::Color>;
+
+pub struct Theme {
+    pub file_fg: Color,
+    pub file_bg: Color,
+    pub dir_fg: Color,
+    pub file_focus_fg: Color,
+    pub file_focus_bg: Color,
+}
+
+fn hex_to_rgb(hex: &Option<String>) -> Option<(u8, u8, u8)> {
+    if let Some(hex) = hex {
+        let hex = hex.trim_start_matches('#');
+        let r = u8::from_str_radix(&hex[0..2], 16);
+        let g = u8::from_str_radix(&hex[2..4], 16);
+        let b = u8::from_str_radix(&hex[4..6], 16);
+        if let (Ok(r), Ok(g), Ok(b)) = (r, g, b) {
+            return Some((r, g, b));
+        }
+    }
+    None
+}
+
+pub fn color_from_string(value: &Option<String>) -> Option<Color> {
+    if let Some((r, g, b)) = hex_to_rgb(value) {
+        return Some(Box::new(color::Rgb(r, g, b)));
+    }
+    None
+}
+
+impl Theme {
+    pub fn new(config_theme: &crate::config::Theme) -> Self {
+        let value = 50;
+
+        let focus_bg = color::Rgb(10, value, 100);
+        let file_fg = color_from_string(&config_theme.file_fg).unwrap_or(Box::new(color::White));
+        let dir_fg = color_from_string(&config_theme.dir_fg).unwrap_or(Box::new(color::Blue));
+        let file_bg = color_from_string(&config_theme.file_bg).unwrap_or(Box::new(color::Reset));
+        let file_focus_fg = color_from_string(&config_theme.file_focus_fg).unwrap_or(Box::new(color::White));
+        let file_focus_bg = color_from_string(&config_theme.file_focus_bg).unwrap_or(Box::new(focus_bg));
+
+        Self {
+            file_fg,
+            file_bg,
+            dir_fg,
+            file_focus_fg,
+            file_focus_bg,
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct Size {
     _w: u16,
@@ -25,10 +76,11 @@ pub struct ListWidget {
 pub struct Display {
     pub screen: AlternateScreen<std::io::Stdout>,
     pub list_widget: ListWidget,
+    pub theme: Theme,
 }
 
 impl Display {
-    pub fn new() -> Self {
+    pub fn new(config_theme: &crate::config::Theme) -> Self {
         let mut list_widget = ListWidget::default();
         list_widget.size.h = 10_u16;
         if let Ok((_, rows)) = termion::terminal_size() {
@@ -38,6 +90,7 @@ impl Display {
         list_widget.start_idx = 0;
 
         Self {
+            theme: Theme::new(config_theme),
             screen: stdout().into_alternate_screen().unwrap(),
             list_widget,
         }
@@ -128,8 +181,13 @@ impl Display {
 
     pub fn set_style_dir(&mut self) {
         write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
-        write!(&mut self.screen, "{}", color::Fg(color::LightBlue)).unwrap();
-        write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
+        write!(&mut self.screen, "{}", color::Fg(self.theme.dir_fg.as_ref())).unwrap();
+        write!(
+            &mut self.screen,
+            "{}",
+            color::Bg(self.theme.file_bg.as_ref())
+        )
+        .unwrap();
     }
 
     pub fn set_style_path(&mut self) {
@@ -137,19 +195,36 @@ impl Display {
     }
 
     pub fn set_style_file(&mut self) {
-        write!(&mut self.screen, "{}", color::Fg(color::White)).unwrap();
-        write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
-    }
-    pub fn set_style_unfocus(&mut self) {
-        // write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
-        write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
-    }
-    pub fn set_style_focus(&mut self) {
-        let value = 50;
         write!(
             &mut self.screen,
             "{}",
-            color::Bg(color::Rgb(value, value, value))
+            color::Fg(self.theme.file_fg.as_ref())
+        )
+        .unwrap();
+        // write!(&mut self.screen, "{}", color::Fg(color::White)).unwrap();
+        // write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
+        write!(
+            &mut self.screen,
+            "{}",
+            color::Bg(self.theme.file_bg.as_ref())
+        )
+        .unwrap();
+    }
+    pub fn set_style_unfocus(&mut self) {
+        // write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
+        // write!(&mut self.screen, "{}", color::Bg(color::Black)).unwrap();
+        write!(
+            &mut self.screen,
+            "{}",
+            color::Bg(self.theme.file_bg.as_ref())
+        )
+        .unwrap();
+    }
+    pub fn set_style_focus(&mut self) {
+        write!(
+            &mut self.screen,
+            "{}",
+            color::Bg(self.theme.file_focus_bg.as_ref())
         )
         .unwrap();
     }

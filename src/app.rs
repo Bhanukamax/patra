@@ -98,6 +98,7 @@ impl App {
                 },
             })
             .collect();
+        self.state.list.sort_by(|a, b| a.name.cmp(&b.name));
         self.state.c_idx = 1;
 
         Ok(())
