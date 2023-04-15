@@ -36,12 +36,24 @@ pub struct Flags {
     write_to_file: bool,
 }
 
+pub enum CommandType {
+    CreateFile,
+    GoToNormalMode,
+    _Input,
+}
+
+pub enum UiMode {
+    Normal,
+    Command(CommandType),
+}
+
 pub struct App {
     pub should_quit: bool,
     pub state: PatraFileState,
     pub flags: Flags,
     pub selection_file_path: String,
     pub exit_code: i32,
+    pub ui_mode: UiMode,
 }
 
 impl Default for App {
@@ -50,6 +62,7 @@ impl Default for App {
             selection_file_path: "".into(),
             should_quit: false,
             exit_code: 0,
+            ui_mode: UiMode::Normal,
             flags: Flags::default(),
             state: PatraFileState::new(String::from(
                 std::env::current_dir().unwrap().to_str().unwrap(),
@@ -62,6 +75,13 @@ impl App {
     pub fn set_should_write_to_file(&mut self, file_path: String) {
         self.flags.write_to_file = true;
         self.selection_file_path = file_path;
+    }
+
+    pub fn run_command(&mut self, cmd: CommandType) {
+        match cmd {
+            CommandType::GoToNormalMode => self.ui_mode = UiMode::Normal,
+            _ => self.ui_mode = UiMode::Command(cmd),
+        }
     }
 
     pub fn update_path(&mut self, path: String) {

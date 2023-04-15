@@ -7,6 +7,7 @@ mod config;
 mod display;
 mod logger;
 
+use app::{CommandType, UiMode};
 use clap::Parser;
 use config::Config;
 use display::Display;
@@ -83,13 +84,22 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
     display.render(&app)?;
     let stdin = stdin();
     for c in stdin.events() {
-        if let Event::Key(Key::Char(key)) = c.as_ref().unwrap() {
-            match &key {
-                'q' => app.quit(Some(0)),
-                'j' => app.next(),
-                'k' => app.prev(),
-                '-' | 'h' => app.up_dir()?,
-                '\n' | 'l' => app.enter()?,
+        logger::debug(&format!("{:?}", &c));
+        if let Event::Key(key) = c.as_ref().unwrap() {
+            match app.ui_mode {
+                UiMode::Normal => match &key {
+                    Key::Char('q') => app.quit(Some(0)),
+                    Key::Char('j') => app.next(),
+                    Key::Char('k') => app.prev(),
+                    Key::Char('%') => app.run_command(CommandType::CreateFile),
+                    Key::Char('-') | Key::Char('h') => app.up_dir()?,
+                    Key::Char('\n') | Key::Char('l') => app.enter()?,
+                    _ => {}
+                },
+                UiMode::Command(CommandType::CreateFile) => match &key {
+                    Key::Esc | Key::Ctrl('c') => app.run_command(CommandType::GoToNormalMode),
+                    _ => {}
+                },
                 _ => {}
             }
         }
