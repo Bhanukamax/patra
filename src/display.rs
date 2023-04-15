@@ -1,4 +1,4 @@
-use crate::app::{PatraFileItemType, PatraFileListItem, PatraFileState};
+use crate::app::{PatraFileItemType, PatraFileListItem, PatraFileState, App};
 use std::io::{stdout, Write};
 use termion::screen::IntoAlternateScreen;
 use termion::{self, color, screen::AlternateScreen, style};
@@ -105,9 +105,10 @@ impl Display {
     pub fn flush(&mut self) -> Result<(), std::io::Error> {
         self.screen.flush()
     }
-    pub fn render(&mut self, state: &PatraFileState) -> Result<(), std::io::Error> {
+    pub fn render(&mut self, app: &App) -> Result<(), std::io::Error> {
+        let state = &app.state;
         let scroll_pos: u16 = state.c_idx.saturating_sub(self.list_widget.size.h);
-        self.render_path(state)?;
+        self.render_path(&state)?;
         self.render_app(&state.list.clone(), state.c_idx, scroll_pos)?;
         self.render_cmd(":")?;
         self.flush()?;

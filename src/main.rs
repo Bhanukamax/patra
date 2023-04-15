@@ -80,7 +80,7 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
     app.list_dir()
         .expect("Something went wrong, check if you have permission to read the directory");
 
-    display.render(&app.state)?;
+    display.render(&app)?;
     let stdin = stdin();
     for c in stdin.events() {
         if let Event::Key(Key::Char(key)) = c.as_ref().unwrap() {
@@ -98,7 +98,7 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
             break;
         }
 
-        display.render(&app.state)?;
+        display.render(&app)?;
     }
     display.show_cursor()?;
     std::process::exit(app.exit_code);
