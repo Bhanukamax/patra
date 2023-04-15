@@ -96,8 +96,10 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
                     Key::Char('\n') | Key::Char('l') => app.enter()?,
                     _ => {}
                 },
-                UiMode::Command(CommandType::CreateFile) => match &key {
+                UiMode::Command(CommandType::CreateFile, _) => match &key {
                     Key::Esc | Key::Ctrl('c') => app.run_command(CommandType::GoToNormalMode),
+                    Key::Char(char) => app.insert_command_char(char),
+                    Key::Backspace => app.delete_command_char(),
                     _ => {}
                 },
                 _ => {}

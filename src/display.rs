@@ -1,4 +1,5 @@
 use crate::app::{App, PatraFileItemType, PatraFileListItem, PatraFileState};
+use crate::app::{CommandType, UiMode};
 use std::io::{stdout, Write};
 use termion::screen::IntoAlternateScreen;
 use termion::{self, color, screen::AlternateScreen, style};
@@ -111,14 +112,21 @@ impl Display {
         self.render_path(&state)?;
         self.render_app(&state.list.clone(), state.c_idx, scroll_pos)?;
         match app.ui_mode {
-            crate::app::UiMode::Command(crate::app::CommandType::CreateFile) => {
-                self.render_cmd(":")?
-            },
-            _ => {}
+            UiMode::Command(CommandType::CreateFile, None) => {
+                if let Some(cmd) = &app.command_str {
+                    self.render_cmd(&format!("Create File: {}", &cmd))?;
+                } else {
+                    self.render_cmd(&("Create File: ".to_string()))?
+                }
+            }
+            _ => {
+                self.hide_cursor()?;
+            }
         }
         self.flush()?;
         Ok(())
     }
+
     pub fn hide_cursor(&mut self) -> Result<(), std::io::Error> {
         write!(self.screen, "{} ", termion::cursor::Hide)
     }
@@ -132,6 +140,7 @@ impl Display {
             self.command_line.screen_pos.y,
         );
         write!(self.screen, "{}", text)?;
+        self.show_cursor()?;
         Ok(())
     }
 

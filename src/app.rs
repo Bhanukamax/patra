@@ -44,7 +44,10 @@ pub enum CommandType {
 
 pub enum UiMode {
     Normal,
-    Command(CommandType),
+    // TODO:
+    // Get rid oth the second item of the command tuple (Option<String>) as it's not used
+    // the app.command_str is used instead
+    Command(CommandType, Option<String>),
 }
 
 pub struct App {
@@ -54,6 +57,7 @@ pub struct App {
     pub selection_file_path: String,
     pub exit_code: i32,
     pub ui_mode: UiMode,
+    pub command_str: Option<String>,
 }
 
 impl Default for App {
@@ -62,6 +66,7 @@ impl Default for App {
             selection_file_path: "".into(),
             should_quit: false,
             exit_code: 0,
+            command_str: Some("".into()),
             ui_mode: UiMode::Normal,
             flags: Flags::default(),
             state: PatraFileState::new(String::from(
@@ -77,10 +82,30 @@ impl App {
         self.selection_file_path = file_path;
     }
 
+    pub fn insert_command_char(&mut self, c: &char) {
+        if let Some(s) = &self.command_str {
+            self.command_str = Some(s.to_owned() + &c.to_string())
+        }
+    }
+
+    pub fn delete_command_char(&mut self) {
+        match &self.command_str {
+            Some(cmd) => {
+                let mut new_cmd = cmd.to_owned();
+                new_cmd.pop();
+                self.command_str = Some(format!("{}", new_cmd))
+            }
+            _ => {}
+        }
+    }
+
     pub fn run_command(&mut self, cmd: CommandType) {
         match cmd {
-            CommandType::GoToNormalMode => self.ui_mode = UiMode::Normal,
-            _ => self.ui_mode = UiMode::Command(cmd),
+            CommandType::GoToNormalMode => {
+                self.ui_mode = UiMode::Normal;
+                self.command_str = Some("".into());
+            }
+            _ => self.ui_mode = UiMode::Command(cmd, None),
         }
     }
 
