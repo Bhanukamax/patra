@@ -22,10 +22,10 @@ pub struct Config {
 impl Config {
     pub fn load_from_path(&mut self, path: String) -> Result<(), Box<dyn std::error::Error>> {
         let conf_content: String = fs::read_to_string(&path).unwrap_or("".to_string());
-        let config: Config = toml::from_str(&conf_content.to_owned()).unwrap_or(Config::default());
+        let config: Config = toml::from_str(&conf_content).unwrap_or(Config::default());
 
         self.theme = config.theme.to_owned();
-        self.update_theme(config.theme.to_owned());
+        self.update_theme(config.theme);
         // logger::debug(&format!("path {}", self.theme));
         logger::debug(&format!("path {}", path));
         Ok(())
@@ -34,9 +34,9 @@ impl Config {
     pub fn load() -> Result<Self, Box<dyn std::error::Error>> {
         if let Some(proj_dirs) = ProjectDirs::from("com", "bmax", "Patra") {
             let conf = proj_dirs.config_dir().join("config.toml");
-            let conf_content: String = fs::read_to_string(&conf).unwrap_or("".to_string());
+            let conf_content: String = fs::read_to_string(conf).unwrap_or("".to_string());
             let config: Config =
-                toml::from_str(&conf_content.to_owned()).unwrap_or(Config::default());
+                toml::from_str(&conf_content).unwrap_or(Config::default());
             return Ok(config);
         }
         Err("No config file found".into())

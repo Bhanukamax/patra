@@ -90,7 +90,7 @@ impl Display {
         list_widget.start_idx = 0;
 
         Self {
-            theme: Theme::new(&config_theme),
+            theme: Theme::new(config_theme),
             screen: stdout().into_alternate_screen().unwrap(),
             list_widget,
         }
