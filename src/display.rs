@@ -41,8 +41,10 @@ impl Theme {
         let file_fg = color_from_string(&config_theme.file_fg).unwrap_or(Box::new(color::White));
         let dir_fg = color_from_string(&config_theme.dir_fg).unwrap_or(Box::new(color::Blue));
         let file_bg = color_from_string(&config_theme.file_bg).unwrap_or(Box::new(color::Reset));
-        let file_focus_fg = color_from_string(&config_theme.file_focus_fg).unwrap_or(Box::new(color::White));
-        let file_focus_bg = color_from_string(&config_theme.file_focus_bg).unwrap_or(Box::new(focus_bg));
+        let file_focus_fg =
+            color_from_string(&config_theme.file_focus_fg).unwrap_or(Box::new(color::White));
+        let file_focus_bg =
+            color_from_string(&config_theme.file_focus_bg).unwrap_or(Box::new(focus_bg));
 
         Self {
             file_fg,
@@ -62,7 +64,7 @@ pub struct Size {
 
 #[derive(Default)]
 pub struct Position {
-    _x: u16,
+    x: u16,
     y: u16,
 }
 
@@ -76,15 +78,19 @@ pub struct ListWidget {
 pub struct Display {
     pub screen: AlternateScreen<std::io::Stdout>,
     pub list_widget: ListWidget,
+    pub command_line: ListWidget,
     pub theme: Theme,
 }
 
 impl Display {
     pub fn new(config_theme: &crate::config::Theme) -> Self {
         let mut list_widget = ListWidget::default();
+        let mut command_line = ListWidget::default();
         list_widget.size.h = 10_u16;
         if let Ok((_, rows)) = termion::terminal_size() {
-            list_widget.size.h = rows - 5
+            list_widget.size.h = rows - 5;
+            command_line.screen_pos.y = rows - 4;
+            command_line.size.h = rows;
         }
         list_widget.screen_pos.y = 1_u16;
         list_widget.start_idx = 0;
@@ -93,6 +99,7 @@ impl Display {
             theme: Theme::new(config_theme),
             screen: stdout().into_alternate_screen().unwrap(),
             list_widget,
+            command_line,
         }
     }
     pub fn flush(&mut self) -> Result<(), std::io::Error> {
@@ -102,6 +109,7 @@ impl Display {
         let scroll_pos: u16 = state.c_idx.saturating_sub(self.list_widget.size.h);
         self.render_path(state)?;
         self.render_app(&state.list.clone(), state.c_idx, scroll_pos)?;
+        self.render_cmd(":")?;
         self.flush()?;
         Ok(())
     }
@@ -110,6 +118,15 @@ impl Display {
     }
     pub fn show_cursor(&mut self) -> Result<(), std::io::Error> {
         write!(self.screen, "{} ", termion::cursor::Show)
+    }
+
+    pub fn render_cmd(&mut self, text: &str) -> Result<(), std::io::Error> {
+        self.move_cursor_cursor(
+            self.command_line.screen_pos.x,
+            self.command_line.screen_pos.y,
+        );
+        write!(self.screen, "{}", text)?;
+        Ok(())
     }
 
     pub fn render_app(
@@ -181,7 +198,12 @@ impl Display {
 
     pub fn set_style_dir(&mut self) {
         write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
-        write!(&mut self.screen, "{}", color::Fg(self.theme.dir_fg.as_ref())).unwrap();
+        write!(
+            &mut self.screen,
+            "{}",
+            color::Fg(self.theme.dir_fg.as_ref())
+        )
+        .unwrap();
         write!(
             &mut self.screen,
             "{}",
