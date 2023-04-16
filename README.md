@@ -29,4 +29,4 @@ This is still at very early development, not recommended for regular use
 | --------- | ----------------------------- |
 | d         | create directory              |
 | %         | create file                   |
-| D         | delete file or directory      |
+| D         | delete file or directory (Caution!, it will delete, non empty directories with all it's contents)     |
