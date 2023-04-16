@@ -69,6 +69,8 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
         app.set_should_write_to_file(path);
     }
     logger::debug(&format!("default starting_path: {:?}", app.state.path));
+    // TODO: handle non existing start paths
+    // TODO: handle relative paths properly (best with some crate)
     if let Some(path) = args.starting_path {
         app.update_path(path);
         logger::debug(&format!("new starting_path: {:?}", app.state.path));
