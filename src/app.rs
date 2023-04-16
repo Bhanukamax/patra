@@ -92,6 +92,16 @@ impl App {
         }
     }
 
+    pub fn try_delete_file(&self) {
+        let idx: usize = self.state.c_idx as usize - 1;
+        let current_file = self.state.list.get(idx).unwrap();
+        if current_file.file_type == PatraFileItemType::Dir {
+            fs::remove_file(format!("{}/{}", &self.state.path, &current_file.name)).unwrap()
+        } else {
+            fs::remove_dir_all(format!("{}", &self.state.path)).unwrap()
+        }
+    }
+
     pub fn try_create_file(&mut self) -> Result<(), std::io::Error> {
         if let Some(f_name) = &self.command_str {
             let file_name = format!("{}/{}", self.state.path, f_name);

@@ -93,6 +93,7 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
                     Key::Char('k') => app.prev(),
                     Key::Char('%') => app.run_command(CommandType::CreateFile),
                     Key::Char('d') => app.run_command(CommandType::CreateDir),
+                    Key::Char('D') => app.try_delete_file(),
                     Key::Char('-') | Key::Char('h') => app.up_dir()?,
                     Key::Char('\n') | Key::Char('l') => app.enter()?,
                     _ => {}
