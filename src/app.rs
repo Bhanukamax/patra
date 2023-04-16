@@ -49,9 +49,6 @@ pub enum CommandType {
 
 pub enum UiMode {
     Normal,
-    // TODO:
-    // Get rid oth the second item of the command tuple (Option<String>) as it's not used
-    // the app.command_str is used instead
     Command(CommandType, Option<String>),
 }
 
