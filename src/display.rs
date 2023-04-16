@@ -136,6 +136,10 @@ impl Display {
         self.flush()?;
         Ok(())
     }
+    pub fn draw_cursor(&mut self) {
+        write!(self.screen, "{}", color::Fg(color::White)).unwrap();
+        write!(self.screen, "{}", "█").unwrap();
+    }
 
     pub fn hide_cursor(&mut self) -> Result<(), std::io::Error> {
         write!(self.screen, "{} ", termion::cursor::Hide)
@@ -153,7 +157,7 @@ impl Display {
         write!(self.screen, "{}", termion::clear::CurrentLine)?;
         write!(self.screen, "{}", termion::clear::AfterCursor)?;
         write!(self.screen, "{}", text)?;
-        self.show_cursor()?;
+        self.draw_cursor();
         Ok(())
     }
 
