@@ -149,17 +149,22 @@ impl App {
                 let current_file = self.state.list.get(idx).unwrap();
                 let path = format!("{}/{}", &self.state.path, &current_file.name);
 
-                let mut command_text: String = "Confirm deletion of ".into();
+                let command_text: String = "Confirm deletion: ".into();
+                // TODO: enable following when 2 line command line text display is added
+                // let mut command_text: String = "Confirm deletion of: ".into();
 
-                if current_file.file_type == PatraFileItemType::Dir {
-                    command_text.push_str("file: ")
-                } else {
-                    command_text.push_str("directory and it's content: ")
-                }
+                // if current_file.file_type == PatraFileItemType::Dir {
+                //     command_text.push_str("file: ")
+                // } else {
+                //     command_text.push_str("directory and it's content: ")
+                // }
                 self.ui_mode = UiMode::Command(
                     cmd,
                     // TODO: show this in two lines
-                    Some(format!("{}: {}? [confirm: <CR>, cancel: <Esc> or <C-c>", command_text, path)),
+                    Some(format!(
+                        "{}: {}? [confirm: <CR>, cancel: <Esc> or <C-c>",
+                        command_text, path
+                    )),
                 );
             }
             _ => self.ui_mode = UiMode::Command(cmd, None),
