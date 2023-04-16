@@ -112,6 +112,13 @@ impl Display {
         self.render_path(&state)?;
         self.render_app(&state.list.clone(), state.c_idx, scroll_pos)?;
         match app.ui_mode {
+            UiMode::Command(CommandType::CreateDir, None) => {
+                if let Some(cmd) = &app.command_str {
+                    self.render_cmd(&format!("Create Dir: {}", &cmd))?;
+                } else {
+                    self.render_cmd(&("Create Dir: ".to_string()))?
+                }
+            }
             UiMode::Command(CommandType::CreateFile, None) => {
                 if let Some(cmd) = &app.command_str {
                     self.render_cmd(&format!("Create File: {}", &cmd))?;

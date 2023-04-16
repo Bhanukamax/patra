@@ -41,6 +41,7 @@ pub struct Flags {
 
 pub enum CommandType {
     CreateFile,
+    CreateDir,
     GoToNormalMode,
     _Input,
 }
@@ -95,6 +96,16 @@ impl App {
         if let Some(f_name) = &self.command_str {
             let file_name = format!("{}/{}", self.state.path, f_name);
             File::create(file_name)?;
+            self.run_command(CommandType::GoToNormalMode);
+            self.list_dir()?;
+        }
+        Ok(())
+    }
+
+    pub fn try_create_dir(&mut self) -> Result<(), std::io::Error> {
+        if let Some(f_name) = &self.command_str {
+            let file_name = format!("{}/{}", self.state.path, f_name);
+            fs::create_dir(file_name)?;
             self.run_command(CommandType::GoToNormalMode);
             self.list_dir()?;
         }
