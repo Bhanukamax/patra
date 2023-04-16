@@ -89,8 +89,8 @@ impl Display {
         let mut command_line = ListWidget::default();
         list_widget.size.h = 10_u16;
         if let Ok((_, rows)) = termion::terminal_size() {
-            list_widget.size.h = rows - 5;
-            command_line.screen_pos.y = rows - 4;
+            list_widget.size.h = rows - 1;
+            command_line.screen_pos.y = rows;
             command_line.size.h = rows;
         }
         list_widget.screen_pos.y = 1_u16;
