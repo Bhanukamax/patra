@@ -42,6 +42,7 @@ pub struct Flags {
 pub enum CommandType {
     CreateFile,
     CreateDir,
+    ConfirmDelete,
     GoToNormalMode,
     _Input,
 }
@@ -92,14 +93,21 @@ impl App {
         }
     }
 
-    pub fn try_delete_file(&self) {
+    pub fn try_delete_file(&mut self) {
         let idx: usize = self.state.c_idx as usize - 1;
         let current_file = self.state.list.get(idx).unwrap();
         if current_file.file_type == PatraFileItemType::Dir {
-            fs::remove_file(format!("{}/{}", &self.state.path, &current_file.name)).unwrap()
+            let path = format!("{}/{}", &self.state.path, &current_file.name);
+            logger::debug(&format!("Trying to delete dir: {}", &path));
+            fs::remove_dir_all(format!("{}", path)).expect("unable to remove dir")
         } else {
-            fs::remove_dir_all(format!("{}", &self.state.path)).unwrap()
+            let path = format!("{}/{}", &self.state.path, &current_file.name);
+            logger::debug(&format!("Trying to delete file: {}", &path));
+            fs::remove_file(format!("{}", path)).expect("unable to remove file")
         }
+        // self.list_dir().expect("unable to list dir")
+        self.run_command(CommandType::GoToNormalMode);
+        self.list_dir().unwrap();
     }
 
     pub fn try_create_file(&mut self) -> Result<(), std::io::Error> {
@@ -138,6 +146,20 @@ impl App {
             CommandType::GoToNormalMode => {
                 self.ui_mode = UiMode::Normal;
                 self.command_str = Some("".into());
+            }
+            CommandType::ConfirmDelete => {
+                let idx: usize = self.state.c_idx as usize - 1;
+                let current_file = self.state.list.get(idx).unwrap();
+                let path = format!("{}/{}", &self.state.path, &current_file.name);
+
+                let mut command_text: String = "Confirm deletion of ".into();
+
+                if current_file.file_type == PatraFileItemType::Dir {
+                    command_text.push_str("file?")
+                } else {
+                    command_text.push_str("directory and it's content? ")
+                }
+                self.ui_mode = UiMode::Command(cmd, Some(format!("{}: {}", command_text, path)));
             }
             _ => self.ui_mode = UiMode::Command(cmd, None),
         }

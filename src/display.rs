@@ -111,7 +111,10 @@ impl Display {
         let scroll_pos: u16 = state.c_idx.saturating_sub(self.list_widget.size.h);
         self.render_path(&state)?;
         self.render_app(&state.list.clone(), state.c_idx, scroll_pos)?;
-        match app.ui_mode {
+        match &app.ui_mode {
+            UiMode::Command(CommandType::ConfirmDelete, Some(text)) => {
+                self.render_cmd(&format!("{}", text)).unwrap();
+            }
             UiMode::Command(CommandType::CreateDir, None) => {
                 if let Some(cmd) = &app.command_str {
                     self.render_cmd(&format!("Create Dir: {}", &cmd))?;
