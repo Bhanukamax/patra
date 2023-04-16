@@ -7,6 +7,7 @@ mod config;
 mod display;
 mod logger;
 
+use app::{CommandType, UiMode};
 use clap::Parser;
 use config::Config;
 use display::Display;
@@ -68,6 +69,8 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
         app.set_should_write_to_file(path);
     }
     logger::debug(&format!("default starting_path: {:?}", app.state.path));
+    // TODO: handle non existing start paths
+    // TODO: handle relative paths properly (best with some crate)
     if let Some(path) = args.starting_path {
         app.update_path(path);
         logger::debug(&format!("new starting_path: {:?}", app.state.path));
@@ -80,16 +83,45 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
     app.list_dir()
         .expect("Something went wrong, check if you have permission to read the directory");
 
-    display.render(&app.state)?;
+    display.render(&app)?;
     let stdin = stdin();
     for c in stdin.events() {
-        if let Event::Key(Key::Char(key)) = c.as_ref().unwrap() {
-            match &key {
-                'q' => app.quit(Some(0)),
-                'j' => app.next(),
-                'k' => app.prev(),
-                '-' | 'h' => app.up_dir()?,
-                '\n' | 'l' => app.enter()?,
+        logger::debug(&format!("{:?}", &c));
+        if let Event::Key(key) = c.as_ref().unwrap() {
+            match app.ui_mode {
+                UiMode::Normal => match &key {
+                    Key::Char('q') => app.quit(Some(0)),
+                    Key::Char('j') => app.next(),
+                    Key::Char('k') => app.prev(),
+                    Key::Char('%') => app.run_command(CommandType::CreateFile),
+                    Key::Char('d') => app.run_command(CommandType::CreateDir),
+                    Key::Char('D') => app.run_command(CommandType::ConfirmDelete),
+                    Key::Char('-') | Key::Char('h') => app.up_dir()?,
+                    Key::Char('\n') | Key::Char('l') => app.enter()?,
+                    _ => {}
+                },
+                UiMode::Command(CommandType::ConfirmDelete, _) => match &key {
+                    Key::Esc | Key::Ctrl('c') => app.run_command(CommandType::GoToNormalMode),
+                    Key::Char('\n') => app.try_delete_file(),
+                    Key::Char(char) => app.insert_command_char(char),
+                    Key::Backspace => app.delete_command_char(),
+                    _ => {}
+                },
+                UiMode::Command(CommandType::CreateDir, _) => match &key {
+                    Key::Esc | Key::Ctrl('c') => app.run_command(CommandType::GoToNormalMode),
+                    Key::Char('\n') => app.try_create_dir()?,
+                    Key::Char(char) => app.insert_command_char(char),
+                    Key::Backspace => app.delete_command_char(),
+                    _ => {}
+                },
+                UiMode::Command(CommandType::CreateFile, _) => match &key {
+                    Key::Esc | Key::Ctrl('c') => app.run_command(CommandType::GoToNormalMode),
+                    // TODO: add select file and exit option for embedding
+                    Key::Char('\n') => app.try_create_file()?,
+                    Key::Char(char) => app.insert_command_char(char),
+                    Key::Backspace => app.delete_command_char(),
+                    _ => {}
+                },
                 _ => {}
             }
         }
@@ -98,7 +130,7 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
             break;
         }
 
-        display.render(&app.state)?;
+        display.render(&app)?;
     }
     display.show_cursor()?;
     std::process::exit(app.exit_code);

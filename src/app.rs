@@ -1,5 +1,8 @@
 use crate::logger;
-use std::{fs, io::Write};
+use std::{
+    fs::{self, File},
+    io::Write,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum PatraFileItemType {
@@ -36,12 +39,27 @@ pub struct Flags {
     write_to_file: bool,
 }
 
+pub enum CommandType {
+    CreateFile,
+    CreateDir,
+    ConfirmDelete,
+    GoToNormalMode,
+    _Input,
+}
+
+pub enum UiMode {
+    Normal,
+    Command(CommandType, Option<String>),
+}
+
 pub struct App {
     pub should_quit: bool,
     pub state: PatraFileState,
     pub flags: Flags,
     pub selection_file_path: String,
     pub exit_code: i32,
+    pub ui_mode: UiMode,
+    pub command_str: Option<String>,
 }
 
 impl Default for App {
@@ -50,6 +68,8 @@ impl Default for App {
             selection_file_path: "".into(),
             should_quit: false,
             exit_code: 0,
+            command_str: Some("".into()),
+            ui_mode: UiMode::Normal,
             flags: Flags::default(),
             state: PatraFileState::new(String::from(
                 std::env::current_dir().unwrap().to_str().unwrap(),
@@ -62,6 +82,90 @@ impl App {
     pub fn set_should_write_to_file(&mut self, file_path: String) {
         self.flags.write_to_file = true;
         self.selection_file_path = file_path;
+    }
+
+    pub fn insert_command_char(&mut self, c: &char) {
+        if let Some(s) = &self.command_str {
+            self.command_str = Some(s.to_owned() + &c.to_string())
+        }
+    }
+
+    pub fn try_delete_file(&mut self) {
+        let idx: usize = self.state.c_idx as usize - 1;
+        let current_file = self.state.list.get(idx).unwrap();
+        if current_file.file_type == PatraFileItemType::Dir {
+            let path = format!("{}/{}", &self.state.path, &current_file.name);
+            logger::debug(&format!("Trying to delete dir: {}", &path));
+            fs::remove_dir_all(path).expect("unable to remove dir")
+        } else {
+            let path = format!("{}/{}", &self.state.path, &current_file.name);
+            logger::debug(&format!("Trying to delete file: {}", &path));
+            fs::remove_file(path).expect("unable to remove file")
+        }
+        // self.list_dir().expect("unable to list dir")
+        self.run_command(CommandType::GoToNormalMode);
+        self.list_dir().unwrap();
+    }
+
+    pub fn try_create_file(&mut self) -> Result<(), std::io::Error> {
+        if let Some(f_name) = &self.command_str {
+            let file_name = format!("{}/{}", self.state.path, f_name);
+            File::create(file_name)?;
+            self.run_command(CommandType::GoToNormalMode);
+            self.list_dir()?;
+        }
+        Ok(())
+    }
+
+    pub fn try_create_dir(&mut self) -> Result<(), std::io::Error> {
+        if let Some(f_name) = &self.command_str {
+            let file_name = format!("{}/{}", self.state.path, f_name);
+            fs::create_dir(file_name)?;
+            self.run_command(CommandType::GoToNormalMode);
+            self.list_dir()?;
+        }
+        Ok(())
+    }
+
+    pub fn delete_command_char(&mut self) {
+        if let Some(cmd) = &self.command_str {
+            let mut new_cmd = cmd.to_owned();
+            new_cmd.pop();
+            self.command_str = Some(new_cmd)
+        }
+    }
+
+    pub fn run_command(&mut self, cmd: CommandType) {
+        match cmd {
+            CommandType::GoToNormalMode => {
+                self.ui_mode = UiMode::Normal;
+                self.command_str = Some("".into());
+            }
+            CommandType::ConfirmDelete => {
+                let idx: usize = self.state.c_idx as usize - 1;
+                let current_file = self.state.list.get(idx).unwrap();
+                let path = format!("{}/{}", &self.state.path, &current_file.name);
+
+                let command_text: String = "Confirm deletion: ".into();
+                // TODO: enable following when 2 line command line text display is added
+                // let mut command_text: String = "Confirm deletion of: ".into();
+
+                // if current_file.file_type == PatraFileItemType::Dir {
+                //     command_text.push_str("file: ")
+                // } else {
+                //     command_text.push_str("directory and it's content: ")
+                // }
+                self.ui_mode = UiMode::Command(
+                    cmd,
+                    // TODO: show this in two lines
+                    Some(format!(
+                        "{}: {}? [confirm: <CR>, cancel: <Esc> or <C-c>",
+                        command_text, path
+                    )),
+                );
+            }
+            _ => self.ui_mode = UiMode::Command(cmd, None),
+        }
     }
 
     pub fn update_path(&mut self, path: String) {

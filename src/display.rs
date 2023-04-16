@@ -1,4 +1,5 @@
-use crate::app::{PatraFileItemType, PatraFileListItem, PatraFileState};
+use crate::app::{App, PatraFileItemType, PatraFileListItem, PatraFileState};
+use crate::app::{CommandType, UiMode};
 use std::io::{stdout, Write};
 use termion::screen::IntoAlternateScreen;
 use termion::{self, color, screen::AlternateScreen, style};
@@ -41,8 +42,10 @@ impl Theme {
         let file_fg = color_from_string(&config_theme.file_fg).unwrap_or(Box::new(color::White));
         let dir_fg = color_from_string(&config_theme.dir_fg).unwrap_or(Box::new(color::Blue));
         let file_bg = color_from_string(&config_theme.file_bg).unwrap_or(Box::new(color::Reset));
-        let file_focus_fg = color_from_string(&config_theme.file_focus_fg).unwrap_or(Box::new(color::White));
-        let file_focus_bg = color_from_string(&config_theme.file_focus_bg).unwrap_or(Box::new(focus_bg));
+        let file_focus_fg =
+            color_from_string(&config_theme.file_focus_fg).unwrap_or(Box::new(color::White));
+        let file_focus_bg =
+            color_from_string(&config_theme.file_focus_bg).unwrap_or(Box::new(focus_bg));
 
         Self {
             file_fg,
@@ -62,7 +65,7 @@ pub struct Size {
 
 #[derive(Default)]
 pub struct Position {
-    _x: u16,
+    x: u16,
     y: u16,
 }
 
@@ -76,15 +79,19 @@ pub struct ListWidget {
 pub struct Display {
     pub screen: AlternateScreen<std::io::Stdout>,
     pub list_widget: ListWidget,
+    pub command_line: ListWidget,
     pub theme: Theme,
 }
 
 impl Display {
     pub fn new(config_theme: &crate::config::Theme) -> Self {
         let mut list_widget = ListWidget::default();
+        let mut command_line = ListWidget::default();
         list_widget.size.h = 10_u16;
         if let Ok((_, rows)) = termion::terminal_size() {
-            list_widget.size.h = rows - 5
+            list_widget.size.h = rows - 1;
+            command_line.screen_pos.y = rows;
+            command_line.size.h = rows;
         }
         list_widget.screen_pos.y = 1_u16;
         list_widget.start_idx = 0;
@@ -93,23 +100,65 @@ impl Display {
             theme: Theme::new(config_theme),
             screen: stdout().into_alternate_screen().unwrap(),
             list_widget,
+            command_line,
         }
     }
     pub fn flush(&mut self) -> Result<(), std::io::Error> {
         self.screen.flush()
     }
-    pub fn render(&mut self, state: &PatraFileState) -> Result<(), std::io::Error> {
+    pub fn render(&mut self, app: &App) -> Result<(), std::io::Error> {
+        let state = &app.state;
         let scroll_pos: u16 = state.c_idx.saturating_sub(self.list_widget.size.h);
         self.render_path(state)?;
         self.render_app(&state.list.clone(), state.c_idx, scroll_pos)?;
+        match &app.ui_mode {
+            UiMode::Command(CommandType::ConfirmDelete, Some(text)) => {
+                self.render_cmd(text).unwrap();
+            }
+            UiMode::Command(CommandType::CreateDir, None) => {
+                if let Some(cmd) = &app.command_str {
+                    self.render_cmd(&format!("Create Dir: {}", &cmd))?;
+                } else {
+                    self.render_cmd("Create Dir: ")?
+                }
+            }
+            UiMode::Command(CommandType::CreateFile, None) => {
+                if let Some(cmd) = &app.command_str {
+                    self.render_cmd(&format!("Create File: {}", &cmd))?;
+                } else {
+                    self.render_cmd("Create File: ")?
+                }
+            }
+            _ => {
+                self.hide_cursor()?;
+            }
+        }
         self.flush()?;
         Ok(())
     }
+    pub fn draw_cursor(&mut self) {
+        write!(self.screen, "{}", color::Fg(color::White)).unwrap();
+        write!(self.screen, "█").unwrap();
+    }
+
     pub fn hide_cursor(&mut self) -> Result<(), std::io::Error> {
         write!(self.screen, "{} ", termion::cursor::Hide)
     }
     pub fn show_cursor(&mut self) -> Result<(), std::io::Error> {
         write!(self.screen, "{} ", termion::cursor::Show)
+    }
+
+    pub fn render_cmd(&mut self, text: &str) -> Result<(), std::io::Error> {
+        self.move_cursor_cursor(
+            self.command_line.screen_pos.x,
+            self.command_line.screen_pos.y,
+        );
+        self.set_style_command();
+        write!(self.screen, "{}", termion::clear::CurrentLine)?;
+        write!(self.screen, "{}", termion::clear::AfterCursor)?;
+        write!(self.screen, "{}", text)?;
+        self.draw_cursor();
+        Ok(())
     }
 
     pub fn render_app(
@@ -181,7 +230,12 @@ impl Display {
 
     pub fn set_style_dir(&mut self) {
         write!(&mut self.screen, "{}", style::NoUnderline).unwrap();
-        write!(&mut self.screen, "{}", color::Fg(self.theme.dir_fg.as_ref())).unwrap();
+        write!(
+            &mut self.screen,
+            "{}",
+            color::Fg(self.theme.dir_fg.as_ref())
+        )
+        .unwrap();
         write!(
             &mut self.screen,
             "{}",
@@ -192,6 +246,11 @@ impl Display {
 
     pub fn set_style_path(&mut self) {
         write!(&mut self.screen, "{}", color::Fg(color::Yellow)).unwrap();
+    }
+
+    pub fn set_style_command(&mut self) {
+        write!(&mut self.screen, "{}", termion::style::Bold).unwrap();
+        write!(&mut self.screen, "{}", color::Fg(color::White)).unwrap();
     }
 
     pub fn set_style_file(&mut self) {
