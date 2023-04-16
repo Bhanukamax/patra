@@ -96,11 +96,11 @@ impl App {
         if current_file.file_type == PatraFileItemType::Dir {
             let path = format!("{}/{}", &self.state.path, &current_file.name);
             logger::debug(&format!("Trying to delete dir: {}", &path));
-            fs::remove_dir_all(format!("{}", path)).expect("unable to remove dir")
+            fs::remove_dir_all(path).expect("unable to remove dir")
         } else {
             let path = format!("{}/{}", &self.state.path, &current_file.name);
             logger::debug(&format!("Trying to delete file: {}", &path));
-            fs::remove_file(format!("{}", path)).expect("unable to remove file")
+            fs::remove_file(path).expect("unable to remove file")
         }
         // self.list_dir().expect("unable to list dir")
         self.run_command(CommandType::GoToNormalMode);
@@ -128,13 +128,10 @@ impl App {
     }
 
     pub fn delete_command_char(&mut self) {
-        match &self.command_str {
-            Some(cmd) => {
-                let mut new_cmd = cmd.to_owned();
-                new_cmd.pop();
-                self.command_str = Some(format!("{}", new_cmd))
-            }
-            _ => {}
+        if let Some(cmd) = &self.command_str {
+            let mut new_cmd = cmd.to_owned();
+            new_cmd.pop();
+            self.command_str = Some(new_cmd)
         }
     }
 

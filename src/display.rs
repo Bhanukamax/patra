@@ -109,24 +109,24 @@ impl Display {
     pub fn render(&mut self, app: &App) -> Result<(), std::io::Error> {
         let state = &app.state;
         let scroll_pos: u16 = state.c_idx.saturating_sub(self.list_widget.size.h);
-        self.render_path(&state)?;
+        self.render_path(state)?;
         self.render_app(&state.list.clone(), state.c_idx, scroll_pos)?;
         match &app.ui_mode {
             UiMode::Command(CommandType::ConfirmDelete, Some(text)) => {
-                self.render_cmd(&format!("{}", text)).unwrap();
+                self.render_cmd(text).unwrap();
             }
             UiMode::Command(CommandType::CreateDir, None) => {
                 if let Some(cmd) = &app.command_str {
                     self.render_cmd(&format!("Create Dir: {}", &cmd))?;
                 } else {
-                    self.render_cmd(&("Create Dir: ".to_string()))?
+                    self.render_cmd("Create Dir: ")?
                 }
             }
             UiMode::Command(CommandType::CreateFile, None) => {
                 if let Some(cmd) = &app.command_str {
                     self.render_cmd(&format!("Create File: {}", &cmd))?;
                 } else {
-                    self.render_cmd(&("Create File: ".to_string()))?
+                    self.render_cmd("Create File: ")?
                 }
             }
             _ => {
@@ -138,7 +138,7 @@ impl Display {
     }
     pub fn draw_cursor(&mut self) {
         write!(self.screen, "{}", color::Fg(color::White)).unwrap();
-        write!(self.screen, "{}", "█").unwrap();
+        write!(self.screen, "█").unwrap();
     }
 
     pub fn hide_cursor(&mut self) -> Result<(), std::io::Error> {
