@@ -98,6 +98,8 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
                 },
                 UiMode::Command(CommandType::CreateFile, _) => match &key {
                     Key::Esc | Key::Ctrl('c') => app.run_command(CommandType::GoToNormalMode),
+                    // TODO: add select file and exit option for embedding
+                    Key::Char('\n') => app.try_create_file()?,
                     Key::Char(char) => app.insert_command_char(char),
                     Key::Backspace => app.delete_command_char(),
                     _ => {}

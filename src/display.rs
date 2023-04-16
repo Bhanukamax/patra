@@ -139,6 +139,9 @@ impl Display {
             self.command_line.screen_pos.x,
             self.command_line.screen_pos.y,
         );
+        self.set_style_command();
+        write!(self.screen, "{}", termion::clear::CurrentLine)?;
+        write!(self.screen, "{}", termion::clear::AfterCursor)?;
         write!(self.screen, "{}", text)?;
         self.show_cursor()?;
         Ok(())
@@ -229,6 +232,11 @@ impl Display {
 
     pub fn set_style_path(&mut self) {
         write!(&mut self.screen, "{}", color::Fg(color::Yellow)).unwrap();
+    }
+
+    pub fn set_style_command(&mut self) {
+        write!(&mut self.screen, "{}", termion::style::Bold).unwrap();
+        write!(&mut self.screen, "{}", color::Fg(color::White)).unwrap();
     }
 
     pub fn set_style_file(&mut self) {

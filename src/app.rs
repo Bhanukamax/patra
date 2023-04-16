@@ -1,5 +1,8 @@
 use crate::logger;
-use std::{fs, io::Write};
+use std::{
+    fs::{self, File},
+    io::Write,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum PatraFileItemType {
@@ -86,6 +89,16 @@ impl App {
         if let Some(s) = &self.command_str {
             self.command_str = Some(s.to_owned() + &c.to_string())
         }
+    }
+
+    pub fn try_create_file(&mut self) -> Result<(), std::io::Error> {
+        if let Some(f_name) = &self.command_str {
+            let file_name = format!("{}/{}", self.state.path, f_name);
+            File::create(file_name)?;
+            self.run_command(CommandType::GoToNormalMode);
+            self.list_dir()?;
+        }
+        Ok(())
     }
 
     pub fn delete_command_char(&mut self) {
