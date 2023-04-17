@@ -139,6 +139,13 @@ impl Display {
                     self.render_cmd("Create Dir: ", None)?
                 }
             }
+            UiMode::Command(CommandType::RenameNode, None) => {
+                if let Some(cmd) = &app.command_str {
+                    self.render_cmd("Rename File to: ", Some(cmd))?;
+                } else {
+                    self.render_cmd("Renom File to: ", None)?
+                }
+            }
             UiMode::Command(CommandType::CreateFile, None) => {
                 if let Some(cmd) = &app.command_str {
                     self.render_cmd("Create File: ", Some(cmd))?;
