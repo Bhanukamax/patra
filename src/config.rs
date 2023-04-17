@@ -12,6 +12,8 @@ pub struct Theme {
     pub file_focus_fg: Option<String>,
     pub file_focus_bg: Option<String>,
     pub dir_fg: Option<String>,
+    pub dir_slash: Option<String>,
+    pub command_fg: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Default, Clone)]
@@ -57,6 +59,12 @@ impl Config {
         }
         if theme.file_focus_bg.is_some() {
             self.theme.file_focus_bg = theme.file_focus_bg;
+        }
+        if theme.command_fg.is_some() {
+            self.theme.command_fg = theme.command_fg;
+        }
+        if theme.dir_slash.is_some() {
+            self.theme.dir_slash = theme.dir_slash;
         }
     }
 }

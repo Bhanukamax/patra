@@ -96,8 +96,16 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
                     Key::Char('%') => app.run_command(CommandType::CreateFile),
                     Key::Char('d') => app.run_command(CommandType::CreateDir),
                     Key::Char('D') => app.run_command(CommandType::ConfirmDelete),
+                    Key::Char('R') => app.run_command(CommandType::RenameNode),
                     Key::Char('-') | Key::Char('h') => app.up_dir()?,
                     Key::Char('\n') | Key::Char('l') => app.enter()?,
+                    _ => {}
+                },
+                UiMode::Command(CommandType::RenameNode, _) => match &key {
+                    Key::Esc | Key::Ctrl('c') => app.run_command(CommandType::GoToNormalMode),
+                    Key::Char('\n') => app.try_rename_node()?,
+                    Key::Char(char) => app.insert_command_char(char),
+                    Key::Backspace => app.delete_command_char(),
                     _ => {}
                 },
                 UiMode::Command(CommandType::ConfirmDelete, _) => match &key {

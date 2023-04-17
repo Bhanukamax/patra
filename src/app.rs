@@ -44,6 +44,7 @@ pub enum CommandType {
     CreateDir,
     ConfirmDelete,
     GoToNormalMode,
+    RenameNode,
     _Input,
 }
 
@@ -88,6 +89,27 @@ impl App {
         if let Some(s) = &self.command_str {
             self.command_str = Some(s.to_owned() + &c.to_string())
         }
+    }
+
+    pub fn try_rename_node(&mut self) -> Result<(), std::io::Error> {
+        let idx: usize = self.state.c_idx as usize - 1;
+        let current_file = self.state.list.get(idx).unwrap();
+        if let Some(f_name) = &self.command_str {
+            let from_file_name = format!("{}/{}", self.state.path, current_file.name);
+            let to_file_name = format!("{}/{}", self.state.path, f_name);
+            let to_metadata = fs::metadata(&to_file_name);
+            if to_metadata.is_ok() {
+                // TODO: show an error when to file exists
+                logger::debug("target file already exists");
+                logger::debug(&format!("current file: {:?}", current_file));
+            } else {
+                logger::debug("target file does NOT exists");
+                fs::rename(from_file_name, to_file_name)?;
+            }
+            self.run_command(CommandType::GoToNormalMode);
+            self.list_dir()?;
+        }
+        Ok(())
     }
 
     pub fn try_delete_file(&mut self) {
@@ -137,6 +159,15 @@ impl App {
 
     pub fn run_command(&mut self, cmd: CommandType) {
         match cmd {
+            CommandType::CreateFile => {
+                self.ui_mode = UiMode::Command(cmd, Some("Create File: ".into()));
+            }
+            CommandType::CreateDir => {
+                self.ui_mode = UiMode::Command(cmd, Some("Create Dir: ".into()));
+            }
+            CommandType::RenameNode => {
+                self.ui_mode = UiMode::Command(cmd, Some("Rename Node: ".into()));
+            }
             CommandType::GoToNormalMode => {
                 self.ui_mode = UiMode::Normal;
                 self.command_str = Some("".into());
@@ -147,14 +178,7 @@ impl App {
                 let path = format!("{}/{}", &self.state.path, &current_file.name);
 
                 let command_text: String = "Confirm deletion: ".into();
-                // TODO: enable following when 2 line command line text display is added
-                // let mut command_text: String = "Confirm deletion of: ".into();
 
-                // if current_file.file_type == PatraFileItemType::Dir {
-                //     command_text.push_str("file: ")
-                // } else {
-                //     command_text.push_str("directory and it's content: ")
-                // }
                 self.ui_mode = UiMode::Command(
                     cmd,
                     // TODO: show this in two lines
