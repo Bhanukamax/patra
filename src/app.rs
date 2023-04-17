@@ -159,6 +159,15 @@ impl App {
 
     pub fn run_command(&mut self, cmd: CommandType) {
         match cmd {
+            CommandType::CreateFile => {
+                self.ui_mode = UiMode::Command(cmd, Some("Create File: ".into()));
+            }
+            CommandType::CreateDir => {
+                self.ui_mode = UiMode::Command(cmd, Some("Create Dir: ".into()));
+            }
+            CommandType::RenameNode => {
+                self.ui_mode = UiMode::Command(cmd, Some("Rename Node: ".into()));
+            }
             CommandType::GoToNormalMode => {
                 self.ui_mode = UiMode::Normal;
                 self.command_str = Some("".into());
@@ -169,14 +178,7 @@ impl App {
                 let path = format!("{}/{}", &self.state.path, &current_file.name);
 
                 let command_text: String = "Confirm deletion: ".into();
-                // TODO: enable following when 2 line command line text display is added
-                // let mut command_text: String = "Confirm deletion of: ".into();
 
-                // if current_file.file_type == PatraFileItemType::Dir {
-                //     command_text.push_str("file: ")
-                // } else {
-                //     command_text.push_str("directory and it's content: ")
-                // }
                 self.ui_mode = UiMode::Command(
                     cmd,
                     // TODO: show this in two lines

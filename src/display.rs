@@ -130,28 +130,12 @@ impl Display {
         self.render_app(&state.list.clone(), state.c_idx, scroll_pos)?;
         match &app.ui_mode {
             UiMode::Command(CommandType::ConfirmDelete, Some(text)) => {
-                self.render_cmd(text, None).unwrap();
+                self.render_cmd(text, &None).unwrap();
             }
-            UiMode::Command(CommandType::CreateDir, None) => {
-                if let Some(cmd) = &app.command_str {
-                    self.render_cmd("Create Dir: ", Some(cmd))?;
-                } else {
-                    self.render_cmd("Create Dir: ", None)?
-                }
-            }
-            UiMode::Command(CommandType::RenameNode, None) => {
-                if let Some(cmd) = &app.command_str {
-                    self.render_cmd("Rename File to: ", Some(cmd))?;
-                } else {
-                    self.render_cmd("Renom File to: ", None)?
-                }
-            }
-            UiMode::Command(CommandType::CreateFile, None) => {
-                if let Some(cmd) = &app.command_str {
-                    self.render_cmd("Create File: ", Some(cmd))?;
-                } else {
-                    self.render_cmd("Create File: ", None)?
-                }
+            UiMode::Command(CommandType::CreateDir, Some(text))
+            | UiMode::Command(CommandType::RenameNode, Some(text))
+            | UiMode::Command(CommandType::CreateFile, Some(text)) => {
+                self.render_cmd(text, &app.command_str)?;
             }
             _ => {
                 self.hide_cursor()?;
@@ -172,7 +156,11 @@ impl Display {
         write!(self.screen, "{} ", termion::cursor::Show)
     }
 
-    pub fn render_cmd(&mut self, prompt: &str, text: Option<&str>) -> Result<(), std::io::Error> {
+    pub fn render_cmd(
+        &mut self,
+        prompt: &str,
+        text: &Option<String>,
+    ) -> Result<(), std::io::Error> {
         self.move_cursor_cursor(
             self.command_line.screen_pos.x,
             self.command_line.screen_pos.y,
