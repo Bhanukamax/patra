@@ -91,11 +91,13 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
             match app.ui_mode {
                 UiMode::Normal => match &key {
                     Key::Char('q') => app.quit(Some(0)),
-                    Key::Char('j') => app.next(),
-                    Key::Char('k') => app.prev(),
+                    Key::Down | Key::Char('j') => app.next(),
+                    Key::Up | Key::Char('k') => app.prev(),
                     Key::Char('%') => app.run_command(CommandType::CreateFile),
                     Key::Char('d') => app.run_command(CommandType::CreateDir),
                     Key::Char('D') => app.run_command(CommandType::ConfirmDelete),
+                    Key::Home => app.goto_first_item(),
+                    Key::End | Key::Char('G') => app.goto_last_item(),
                     Key::Char('R') => app.run_command(CommandType::RenameNode),
                     Key::Char('-') | Key::Char('h') => app.up_dir()?,
                     Key::Char('\n') | Key::Char('l') => app.enter()?,

@@ -222,7 +222,22 @@ impl Display {
                 self.set_style_dir();
                 ("", "/")
             }
-            PatraFileItemType::File => ("", ""),
+            PatraFileItemType::File => {
+                if let Some(ext) = std::path::Path::new(&item.name)
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                {
+                    match ext {
+                        "rs" => ("\u{e7a8}", ""),
+                        "ts" => ("\u{fbe4}", ""),
+                        "scala" => ("\u{e68e}", ""),
+                        "toml" | "json" | "py" => ("\u{eae9}", ""),
+                        _ => ("", ""),
+                    }
+                } else {
+                    ("", "")
+                }
+            }
             PatraFileItemType::Sym => ("", ""),
             PatraFileItemType::Unknown => ("⚠", ""),
         };
