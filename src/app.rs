@@ -157,6 +157,10 @@ impl App {
         }
     }
 
+    pub fn set_command_str(&mut self, text: &str) {
+        self.command_str = Some(text.to_string());
+    }
+
     pub fn run_command(&mut self, cmd: CommandType) {
         match cmd {
             CommandType::CreateFile => {
@@ -166,7 +170,10 @@ impl App {
                 self.ui_mode = UiMode::Command(cmd, Some("Create Dir: ".into()));
             }
             CommandType::RenameNode => {
+                let idx: usize = self.state.c_idx as usize - 1;
+                let current_file = self.state.list.get(idx).unwrap();
                 self.ui_mode = UiMode::Command(cmd, Some("Rename Node: ".into()));
+                self.set_command_str(&current_file.name.to_string());
             }
             CommandType::GoToNormalMode => {
                 self.ui_mode = UiMode::Normal;
