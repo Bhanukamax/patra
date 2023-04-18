@@ -289,6 +289,10 @@ impl App {
         Ok(())
     }
 
+    pub fn goto_first_item(&mut self) {
+        self.state.c_idx = 1
+    }
+
     pub fn goto_last_item(&mut self) {
         self.state.c_idx = self.state.list.len() as u16;
     }
