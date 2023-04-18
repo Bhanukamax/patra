@@ -288,6 +288,11 @@ impl App {
         }
         Ok(())
     }
+
+    pub fn goto_last_item(&mut self) {
+        self.state.c_idx = self.state.list.len() as u16;
+    }
+
     pub fn next(&mut self) {
         self.state.c_idx = if self.state.c_idx == self.state.list.len() as u16 {
             1

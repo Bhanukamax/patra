@@ -96,6 +96,7 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
                     Key::Char('%') => app.run_command(CommandType::CreateFile),
                     Key::Char('d') => app.run_command(CommandType::CreateDir),
                     Key::Char('D') => app.run_command(CommandType::ConfirmDelete),
+                    Key::Char('G') => app.goto_last_item(),
                     Key::Char('R') => app.run_command(CommandType::RenameNode),
                     Key::Char('-') | Key::Char('h') => app.up_dir()?,
                     Key::Char('\n') | Key::Char('l') => app.enter()?,
