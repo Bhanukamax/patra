@@ -120,6 +120,13 @@ impl Display {
             command_line,
         }
     }
+
+    // Ensure terminal cleanup when Display is dropped
+    pub fn cleanup(&mut self) -> Result<(), std::io::Error> {
+        self.show_cursor()?;
+        self.exit_alternate_screen()?;
+        Ok(())
+    }
     pub fn flush(&mut self) -> Result<(), std::io::Error> {
         self.screen.flush()
     }
@@ -154,6 +161,12 @@ impl Display {
     }
     pub fn show_cursor(&mut self) -> Result<(), std::io::Error> {
         write!(self.screen, "{} ", termion::cursor::Show)
+    }
+
+    pub fn exit_alternate_screen(&mut self) -> Result<(), std::io::Error> {
+        // Exit alternate screen and restore main screen
+        write!(self.screen, "{}", termion::screen::ToMainScreen)?;
+        self.flush()
     }
 
     pub fn render_cmd(
@@ -306,6 +319,13 @@ impl Display {
     }
 
     pub fn move_cursor_cursor(&mut self, x: u16, y: u16) {
-        write!(&mut self.screen, "{}", termion::cursor::Goto(x, y)).unwrap();
+        write!(self.screen, "{}", termion::cursor::Goto(x, y)).unwrap();
+    }
+}
+
+impl Drop for Display {
+    fn drop(&mut self) {
+        // Ensure terminal cleanup when Display is dropped
+        let _ = self.cleanup();
     }
 }

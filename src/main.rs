@@ -11,10 +11,12 @@ use app::{CommandType, UiMode};
 use clap::Parser;
 use config::Config;
 use display::Display;
-use std::io::{stdin, stdout};
+use std::io::{stdin, stdout, Write};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use serde::Deserialize;
 
@@ -35,6 +37,24 @@ struct Args {
 type DebugMode = bool;
 
 fn main() {
+    // Set up panic handler to ensure terminal cleanup
+    std::panic::set_hook(Box::new(|panic_info| {
+        // Try to restore terminal state on panic
+        if let Ok(mut stdout) = stdout().into_raw_mode() {
+            let _ = write!(stdout, "{}", termion::cursor::Show);
+            let _ = write!(stdout, "{}", termion::screen::ToMainScreen);
+            let _ = stdout.flush();
+        }
+        eprintln!("Application panicked: {}", panic_info);
+    }));
+
+    // Set up signal handler for graceful shutdown
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+    ctrlc::set_handler(move || {
+        r.store(false, Ordering::SeqCst);
+    }).expect("Error setting Ctrl-C handler");
+
     let debug_mode: DebugMode = match std::env::var("DEBUG") {
         Ok(val) => matches!(val.as_str(), "1"),
         Err(_) => false,
@@ -43,15 +63,19 @@ fn main() {
     logger::info("Starting app");
     let mut config = Config::load().unwrap_or(Config::default());
 
-    dbg!(config.clone());
+    // dbg!(config.clone());
     if !debug_mode {
-        if let Err(e) = run(&mut config) {
-            logger::error(&format!("Error: {}", e));
+        match run(&mut config, &running) {
+            Ok(exit_code) => std::process::exit(exit_code),
+            Err(e) => {
+                logger::error(&format!("Error: {}\n", e));
+                std::process::exit(1);
+            }
         }
     }
 }
 
-fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
+fn run(config: &mut Config, running: &Arc<AtomicBool>) -> Result<i32, Box<dyn std::error::Error>> {
     let args = Args::parse();
     logger::debug(&format!("Args selection_path: {:?}", args.selection_path));
     logger::debug(&format!("Args starting_path: {:?}", args.starting_path));
@@ -77,7 +101,8 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let mut display = Display::new(&config.theme);
-    let _stdout = stdout().into_raw_mode();
+    // Store raw mode handle to ensure proper cleanup
+    let _raw_stdout = stdout().into_raw_mode()?;
     display.hide_cursor()?;
 
     app.list_dir()
@@ -86,6 +111,12 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
     display.render(&app)?;
     let stdin = stdin();
     for c in stdin.events() {
+        // Check if we should stop running (e.g., Ctrl+C was pressed)
+        if !running.load(Ordering::SeqCst) {
+            app.quit(Some(130)); // Exit code 130 for Ctrl+C
+            break;
+        }
+
         logger::debug(&format!("{:?}", &c));
         if let Event::Key(key) = c.as_ref().unwrap() {
             match app.ui_mode {
@@ -142,6 +173,11 @@ fn run(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
 
         display.render(&app)?;
     }
+    
+    // Proper cleanup before exit
     display.show_cursor()?;
-    std::process::exit(app.exit_code);
+    display.exit_alternate_screen()?;
+    
+    // Exit with the appropriate code instead of using std::process::exit
+    Ok(app.exit_code)
 }
